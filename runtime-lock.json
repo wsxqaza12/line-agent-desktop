@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "pythonVersion": "3.13.17",
+  "nodeVersion": "24.22.0",
+  "upstreamVersion": "3.3.8",
+  "upstreamCommit": "097324e678e6dba60a4c4e187054f8b7397a9100",
+  "sqliteDllSha256": "5030decc6d914539e3b9b7e28aa4f6de1e7161dac6fd4b21eb02e6754d9b175e",
+  "artifacts": {
+    "node": {
+      "url": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-win-x64.zip",
+      "sha256": "f9683a19877e12a9b167305c8db71040d812876359de21f0d2e97c3f321f80c3",
+      "archive": "node.zip"
+    },
+    "python": {
+      "url": "https://www.python.org/ftp/python/3.13.17/python-3.13.17-embed-amd64.zip",
+      "sha256": "9e35319bffedab8b36ad44d8f377cb4f1733bcec257a0b6d04d94f01486ddb38",
+      "archive": "python.zip"
+    },
+    "vendor": {
+      "url": "https://codeload.github.com/bensonmaxai/line-desktop-mcp/zip/097324e678e6dba60a4c4e187054f8b7397a9100",
+      "sha256": "d755d0a712b6933b51e24cd26149de6a002c801a6e9c0ddac7338f785a0a65d3",
+      "archive": "vendor.zip"
+    },
+    "sqlite": {
+      "url": "https://github.com/utelle/SQLite3MultipleCiphers/releases/download/v2.5.1/sqlite3mc-2.5.1-sqlite-3.53.4-win64.zip",
+      "sha256": "858c4f2e9e262caca06e6c4fafee62d13dd90c21b649b047f17992bf0402981e",
+      "archive": "sqlite.zip"
+    },
+    "cryptography": {
+      "url": "https://files.pythonhosted.org/packages/9a/4f/adfc442765721292fff86d314ce385d3249d22db42295c0dd057727b60f3/cryptography-50.0.2-cp311-abi3-win_amd64.whl",
+      "sha256": "7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c",
+      "archive": "cryptography-50.0.2-cp311-abi3-win_amd64.whl"
+    },
+    "pillow": {
+      "url": "https://files.pythonhosted.org/packages/a6/9b/7a58e61d62be561da3a356fe2384d4059a6345fc130e23ef1c36a5b81d24/pillow-12.3.0-cp313-cp313-win_amd64.whl",
+      "sha256": "1cca606cd25738df4ed873d5ad46bbdb3d83b5cbca291f6b4ff13a4df6b0bbe8",
+      "archive": "pillow-12.3.0-cp313-cp313-win_amd64.whl"
+    },
+    "cffi": {
+      "url": "https://files.pythonhosted.org/packages/60/a6/8b149b2c3f2e11aaa1618ef64500b45f50f22c57a977a4dff1aff1f91042/cffi-2.1.1-cp313-cp313-win_amd64.whl",
+      "sha256": "1aa5645c30469b09530c4ebca77ebf8f17618293c58f8549cb1a543a50236e7d",
+      "archive": "cffi-2.1.1-cp313-cp313-win_amd64.whl"
+    },
+    "pycparser": {
+      "url": "https://files.pythonhosted.org/packages/b6/ae/315bbeee126a769cbde43cf4908acb4b40408d8bf8bbf334dd7368d8dadf/pycparser-3.12-py3-none-any.whl",
+      "sha256": "a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e",
+      "archive": "pycparser-3.12-py3-none-any.whl"
+    }
+  }
+}

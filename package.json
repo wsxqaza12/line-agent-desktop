@@ -1,0 +1,91 @@
+{
+  "name": "line-agent-desktop",
+  "productName": "LINE Agent Desktop",
+  "version": "0.1.0",
+  "description": "A local Windows companion that connects selected LINE chats to your AI agent.",
+  "author": "ChiChieh",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "start": "electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/build-bridge.mjs",
+    "runtime": "python3 scripts/prepare-runtime.py",
+    "package:win": "npm run build && electron-builder --win nsis zip --x64 --publish never",
+    "test:ui": "node scripts/test-ui.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "electron": "45.1.0",
+    "electron-builder": "26.18.0",
+    "esbuild": "^0.27.0",
+    "lucide-react": "^0.577.0",
+    "playwright": "^1.58.0",
+    "prettier": "^3.9.10",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "^5.9.3",
+    "vite": "8.3.5"
+  },
+  "build": {
+    "appId": "io.github.lineagent.desktop",
+    "artifactName": "LINE-Agent-Desktop-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "electron/**/*",
+      "core/**/*",
+      "dist/**/*",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "build/mcp-server.cjs",
+        "to": "bridge/mcp-server.cjs"
+      },
+      {
+        "from": "build/THIRD_PARTY_LICENSES.txt",
+        "to": "bridge/THIRD_PARTY_LICENSES.txt"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "icon": "assets/icon.ico",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": false,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
