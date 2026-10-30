@@ -57,6 +57,34 @@
 .provider-detail small {
   color: #737b73;
 }
+.provider-path {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #737b73;
+  line-height: 1.6;
+}
+.assistant-manual {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid #e0e5df;
+}
+.assistant-manual h2 {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+.assistant-manual p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #626c63;
+}
+.manual-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
 .assistant-help {
   padding: 22px 0;
   margin-top: 16px;

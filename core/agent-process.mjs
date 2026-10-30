@@ -29,7 +29,7 @@ export function cleanEnvironment(env = process.env) {
 // Fixed shell text only. Paths, executable names and prompts are never evaluated
 // as shell source. A separate Linux process group makes WSL cancellation reliable.
 const WSL_RUN =
-  'cd "$1" || exit 71; shift; exec setsid --fork --wait /bin/sh -c \'printf "__LINE_AGENT_PID__%s\\n" "$$" >&2; exec "$@"\' line-agent "$@"';
+  'cd "$1" || exit 71; shift; PATH="$1:$PATH"; export PATH; shift; exec setsid --fork --wait /bin/sh -c \'printf "__LINE_AGENT_PID__%s\\n" "$$" >&2; exec "$@"\' line-agent "$@"';
 export function processSpec(target, args, cwd) {
   if (target.distro)
     return {
@@ -43,6 +43,7 @@ export function processSpec(target, args, cwd) {
         WSL_RUN,
         'line-agent',
         cwd,
+        target.pathPrefix ?? target.command.slice(0, target.command.lastIndexOf('/')),
         '/usr/bin/env',
         ...PRIVATE_ENV.flatMap((key) => ['-u', key]),
         target.command,
@@ -57,7 +58,15 @@ export function processSpec(target, args, cwd) {
 export function runProcess(
   target,
   args,
-  { cwd, input = '', timeout = 20000, signal, onLine = () => {}, maxBytes = 4_000_000 } = {},
+  {
+    cwd,
+    input = '',
+    timeout = 20000,
+    signal,
+    onLine = () => {},
+    maxBytes = 4_000_000,
+    encoding = 'utf8',
+  } = {},
 ) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(new AppError('AGENT_CANCELLED'));
@@ -75,7 +84,7 @@ export function runProcess(
       errPending = '',
       bytes = 0;
     let reason, linuxPid, forceTimer, killError;
-    const decoder = new StringDecoder('utf8');
+    const decoder = new StringDecoder(encoding);
     const errDecoder = new StringDecoder('utf8');
     const helper = (command, argv) => {
       const p = spawn(command, argv, { windowsHide: true, stdio: 'ignore' });

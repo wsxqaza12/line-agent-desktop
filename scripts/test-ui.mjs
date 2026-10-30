@@ -76,6 +76,10 @@ try {
   await page.getByRole('button', { name: '使用這個 AI', exact: true }).click();
   await page.getByRole('button', { name: '已選用', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: '需要登入', exact: true }).isDisabled(), true);
+  await page.getByRole('button', { name: '指定 Claude Code 位置', exact: true }).click();
+  await page.getByText('D:\\AI Tools\\claude.exe', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '移除手動設定', exact: true }).click();
+  await page.getByText('D:\\AI Tools\\claude.exe', { exact: true }).waitFor({ state: 'hidden' });
   await page.screenshot({ path: 'test-results/assistant.png', fullPage: true });
   await page.getByRole('button', { name: '工作看板', exact: true }).click();
   await page.getByRole('button', { name: '請 Agent 整理', exact: true }).click();

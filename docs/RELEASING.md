@@ -8,6 +8,10 @@
    nonzero exit, cancellation and process disappearance. Never load credentials
    yourself or let an API key replace subscription authentication. Test discovery
    in the packaged executable as well as the source checkout.
+   Include the detection regression matrix in DETECTION.md, old/new npm entry
+   layouts, fresh versus inherited PATH, multiple installs, Unicode paths,
+   manual selection and stopped/failed probes. Cached CLI login status is not
+   evidence of a successful service request; report live authentication failures.
 3. Run `py scripts/prepare-runtime.py` on Windows (or `python3` on Linux).
    All artifact hashes must match runtime-lock.json. Keep dependency notices.
 4. On Windows run `npm run package:win` and wait for exit code 0.

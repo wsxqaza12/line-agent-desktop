@@ -103,6 +103,55 @@ test('runner reads scoped evidence, writes real board, retries deduplicate and p
   await f.runner.initialize();
   assert.equal(f.runner.selectedId, 'test');
 });
+
+test('manual choices persist, can be removed, and lost selections remain visible', async (t) => {
+  const f = await fixture(t, success());
+  const selected = f.runner.selectedId;
+  await f.runner.scan();
+  assert.equal(f.runner.selectedId, selected);
+  assert.ok(f.runner.targets.has(selected));
+  const manualFile = path.join(f.home, 'custom-cli.exe');
+  await fs.writeFile(manualFile, 'fixture');
+  f.runner.probe = async (target) => ({
+    id: target.id,
+    provider: target.provider,
+    label: 'Claude Code',
+    location: 'Windows',
+    executable: target.command,
+    manual: !!target.manual,
+    status: 'ready',
+  });
+  await f.runner.addManual('claude', manualFile);
+  const manual = f.runner.providers.find((p) => p.manual);
+  assert.ok(manual);
+  await f.runner.select(manual.id);
+  await f.runner.initialize();
+  await f.runner.scan();
+  assert.equal(f.runner.providers.find((p) => p.id === manual.id)?.status, 'ready');
+  await f.runner.removeManual(manual.id);
+  assert.equal(f.runner.providers.find((p) => p.id === manual.id)?.status, 'missing');
+  assert.equal(f.runner.manualTargets.length, 0);
+});
+
+test('stopping discovery aborts checks and keeps unverified candidates visible', async (t) => {
+  const f = await fixture(t, success());
+  let ready;
+  const started = new Promise((resolve) => {
+    ready = resolve;
+  });
+  f.runner.probe = async (_target, _cwd, { signal }) => {
+    ready();
+    return runProcess({ command: process.execPath }, ['-e', 'setInterval(()=>{},1000)'], { signal });
+  };
+  const scanning = f.runner.scan();
+  await started;
+  await f.runner.cancelScan();
+  await scanning;
+  assert.equal(f.runner.scanning, false);
+  assert.equal(f.runner.providers.length, 1);
+  assert.equal(f.runner.providers[0].status, 'unknown');
+  assert.ok(f.runner.notes.some((note) => note.includes('停止')));
+});
 test('permission changes during model execution discard result', async (t) => {
   const f = await fixture(t, async (...args) => {
     await f.line.setEnabled(false);
@@ -128,6 +177,20 @@ test('nonzero exit, missing terminal event and malformed evidence never write', 
     assert.equal(f.runner.job.state, 'failed');
     assert.equal(f.work.desktop().items.length, 0);
   }
+});
+test('rejected cached login stays visible and requires login before another run', async (t) => {
+  const f = await fixture(t, async () => ({
+    code: 1,
+    stdout: '',
+    stderr: 'API Error: 401 OAuth access token is invalid.',
+  }));
+  await f.runner.start({ days: 1, chatRef: chat.chatRef });
+  await f.runner.pending;
+  assert.equal(f.runner.job.error.code, 'AGENT_LOGIN_REQUIRED');
+  assert.equal(f.runner.providers.find((p) => p.id === 'test').status, 'login');
+  assert.equal(f.runner.selectedId, 'test');
+  assert.equal(f.work.desktop().items.length, 0);
+  await assert.rejects(f.runner.start({ days: 1 }), { code: 'AGENT_NOT_READY' });
 });
 test('cancellation waits for child completion and blocks overlapping runs', async (t) => {
   let started;

@@ -221,7 +221,7 @@ function App() {
             </div>
           </div>
           <div className="version">
-            <span className="dot" /> Windows · v0.3.0 <span>PREVIEW</span>
+            <span className="dot" /> Windows · v0.3.1 <span>PREVIEW</span>
           </div>
         </div>
       </aside>

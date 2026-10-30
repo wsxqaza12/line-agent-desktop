@@ -45,15 +45,23 @@ export function useAssistant(bridge?: Bridge) {
 export function AssistantSetup({ bridge, onAdvanced }: { bridge?: Bridge; onAdvanced: () => void }) {
   const { state, error, act } = useAssistant(bridge);
   const [scanning, setScanning] = useState(false);
+  const [choosing, setChoosing] = useState(false);
   async function scan() {
     setScanning(true);
     await act(() => bridge!.scanAssistants());
     setScanning(false);
   }
   useEffect(() => {
-    if (bridge) void scan();
+    bridge?.assistant().then((r) => {
+      if (r.ok && !r.data.scanning && !busyJob(r.data)) void scan();
+    });
   }, [bridge]);
   const working = busyJob(state);
+  async function choose(provider: 'codex' | 'claude') {
+    setChoosing(true);
+    await act(() => bridge!.chooseAssistantFile(provider));
+    setChoosing(false);
+  }
   return (
     <section className="assistant-setup">
       <div className="work-heading">
@@ -63,7 +71,7 @@ export function AssistantSetup({ bridge, onAdvanced }: { bridge?: Bridge; onAdva
         </div>
         <button
           className="button secondary"
-          disabled={!bridge || scanning || state?.scanning || working}
+          disabled={!bridge || scanning || state?.scanning || working || choosing}
           onClick={scan}
         >
           <RefreshCw size={16} className={scanning || state?.scanning ? 'spin' : ''} />
@@ -73,6 +81,11 @@ export function AssistantSetup({ bridge, onAdvanced }: { bridge?: Bridge; onAdva
       <p className="assistant-intro">
         使用這台電腦已登入的 Codex 或 Claude Code。Windows 和 WSL 都能偵測，登入由原本的 AI 程式管理。
       </p>
+      {state?.scanning && (
+        <button className="text-button" onClick={() => act(() => bridge!.stopAssistantScan())}>
+          停止偵測
+        </button>
+      )}
       {error && (
         <p className="work-error" role="alert">
           {error}
@@ -87,14 +100,24 @@ export function AssistantSetup({ bridge, onAdvanced }: { bridge?: Bridge; onAdva
                 {p.label} <span>{p.location}</span>
               </h2>
               <p>{p.detail}</p>
-              <small>{p.version}</small>
+              <small>{[p.version, p.installation].filter(Boolean).join(' · ')}</small>
+              {p.executable && <code className="provider-path">{p.executable}</code>}
+              {p.manual && (
+                <button
+                  className="text-button"
+                  disabled={working || state.scanning || choosing}
+                  onClick={() => act(() => bridge!.removeManualAssistant(p.id))}
+                >
+                  移除手動設定
+                </button>
+              )}
             </div>
             <button
               className="button secondary"
-              disabled={p.status !== 'ready' || working || state.scanning}
+              disabled={p.status !== 'ready' || working || state.scanning || choosing}
               onClick={() => act(() => bridge!.selectAssistant(p.id))}
             >
-              {state.selectedId === p.id ? (
+              {state.selectedId === p.id && p.status === 'ready' ? (
                 <>
                   <Check size={16} />
                   已選用
@@ -105,8 +128,10 @@ export function AssistantSetup({ bridge, onAdvanced }: { bridge?: Bridge; onAdva
                 '需要登入'
               ) : p.status === 'update' ? (
                 '需要更新'
+              ) : p.status === 'missing' ? (
+                '未找到'
               ) : (
-                '尚未就緒'
+                '尚未確認可用'
               )}
             </button>
           </article>
@@ -126,6 +151,30 @@ export function AssistantSetup({ bridge, onAdvanced }: { bridge?: Bridge; onAdva
           {note}
         </p>
       ))}
+      <div className="assistant-manual">
+        <h2>已安裝，卻沒找到？</h2>
+        <p>可自行選擇 Codex 或 Claude Code 的程式檔。自訂安裝位置也能使用，選好後會記住並檢查登入。</p>
+        <div className="manual-actions">
+          <button
+            className="button secondary"
+            disabled={!bridge || working || scanning || state?.scanning || choosing}
+            onClick={() => choose('codex')}
+          >
+            指定 Codex 位置
+          </button>
+          <button
+            className="button secondary"
+            disabled={!bridge || working || scanning || state?.scanning || choosing}
+            onClick={() => choose('claude')}
+          >
+            指定 Claude Code 位置
+          </button>
+        </div>
+        <p className="small-note">
+          請選 CLI 的 .exe 或 JavaScript 入口；WSL 可從檔案選擇器的 Linux 資料夾選取。Claude Desktop
+          的聊天視窗程式無法作為 CLI 使用。
+        </p>
+      </div>
       <details className="assistant-help">
         <summary>安裝、登入與使用額度</summary>
         <p>

@@ -2,7 +2,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { AppError, safeError } from './errors.mjs';
-import { discoverTargets, probeTarget, targetDirectory } from './agent-providers.mjs';
+import {
+  discoverTargets,
+  probeTarget,
+  targetDirectory,
+  manualTarget,
+  uniqueTargets,
+} from './agent-providers.mjs';
 import { runProcess } from './agent-process.mjs';
 
 const nullable = (type) => ({ type: [type, 'null'] });
@@ -257,6 +263,9 @@ export class AgentRunner {
     this.controller = null;
     this.pending = null;
     this.scanning = false;
+    this.manualTargets = [];
+    this.configurationNotes = [];
+    this.selectedInfo = null;
     this.home = path.join(line.store.home, 'assistant');
   }
   get busy() {
@@ -277,50 +286,128 @@ export class AgentRunner {
   async initialize() {
     await fs.mkdir(this.home, { recursive: true, mode: 0o700 });
     try {
-      this.selectedId =
-        JSON.parse(await fs.readFile(path.join(this.home, 'selection.json'), 'utf8')).selectedId ?? null;
+      const value = JSON.parse(await fs.readFile(path.join(this.home, 'selection.json'), 'utf8'));
+      this.selectedId = typeof value.selectedId === 'string' ? value.selectedId : null;
+      this.selectedInfo = value.selectedInfo ?? null;
     } catch {}
-  }
-  async scan() {
-    if (this.scanning || this.busy) throw new AppError('BUSY');
-    this.scanning = true;
-    this.changed();
     try {
-      const { targets, notes } = await this.discover(this.nodePath);
-      this.targets = new Map(targets.map((t) => [t.id, t]));
-      this.notes = notes;
-      this.providers = [];
-      for (const t of targets) {
-        const cwd = await targetDirectory(t, this.home).catch(() => null);
-        this.providers.push(
-          cwd
-            ? await this.probe(t, cwd)
-            : {
-                id: t.id,
-                provider: t.provider,
-                label: t.provider === 'codex' ? 'Codex' : 'Claude Code',
-                location: `WSL · ${t.distro}`,
-                version: '',
-                status: 'unknown',
-                detail: 'WSL 無法存取工作目錄，請確認磁碟掛載。',
-              },
-        );
+      const entries = JSON.parse(await fs.readFile(path.join(this.home, 'manual-providers.json'), 'utf8'));
+      if (!Array.isArray(entries) || entries.length > 8) throw new Error('Invalid manual providers');
+      this.manualTargets = entries.map((entry) => manualTarget(entry.provider, entry.path, this.nodePath));
+    } catch (error) {
+      if (error.code !== 'ENOENT')
+        this.configurationNotes.push('手動指定的 AI 設定無法讀取，請重新指定位置。');
+    }
+  }
+  async persist(name, value) {
+    const file = path.join(this.home, `${name}-${randomUUID()}.tmp`);
+    await fs.writeFile(file, JSON.stringify(value), { mode: 0o600 });
+    await fs.rename(file, path.join(this.home, `${name}.json`));
+  }
+  async addManual(provider, selectedPath) {
+    if (this.busy || this.scanning) throw new AppError('BUSY');
+    const target = manualTarget(provider, selectedPath, this.nodePath);
+    const next = uniqueTargets([...this.manualTargets.filter((t) => t.id !== target.id), target]);
+    if (next.length > 8) throw new AppError('AGENT_MANUAL_LIMIT');
+    await this.persist(
+      'manual-providers',
+      next.map((t) => ({ provider: t.provider, path: t.selectedPath })),
+    );
+    this.manualTargets = next;
+    return this.scan();
+  }
+  async removeManual(id) {
+    if (this.busy || this.scanning) throw new AppError('BUSY');
+    const next = this.manualTargets.filter((t) => t.id !== id);
+    await this.persist(
+      'manual-providers',
+      next.map((t) => ({ provider: t.provider, path: t.selectedPath })),
+    );
+    this.manualTargets = next;
+    return this.scan();
+  }
+  scan() {
+    if (this.scanning || this.busy) return Promise.reject(new AppError('BUSY'));
+    this.scanning = true;
+    this.scanController = new AbortController();
+    const signal = this.scanController.signal;
+    const scanController = this.scanController;
+    const timer = setTimeout(() => scanController.abort(), 60000);
+    this.changed();
+    this.scanPending = (async () => {
+      try {
+        const discovered = await this.discover(this.nodePath, { signal });
+        const targets = uniqueTargets([...this.manualTargets, ...discovered.targets]);
+        this.targets = new Map(targets.map((t) => [t.id, t]));
+        this.notes = [...this.configurationNotes, ...discovered.notes];
+        this.providers = targets.map((t) => ({
+          id: t.id,
+          provider: t.provider,
+          label: t.provider === 'codex' ? 'Codex' : 'Claude Code',
+          location: t.distro ? `WSL · ${t.distro}` : process.platform === 'win32' ? 'Windows' : '本機',
+          installation: t.installation ?? '',
+          executable: t.prefix?.[0] ?? t.command,
+          manual: !!t.manual,
+          version: '',
+          status: 'unknown',
+          detail: '正在檢查程式與登入…',
+        }));
+        this.changed();
+        let index = 0;
+        const worker = async () => {
+          while (index < targets.length) {
+            const i = index++,
+              target = targets[i];
+            try {
+              const cwd = await targetDirectory(target, this.home, { signal });
+              this.providers[i] = await this.probe(target, cwd, { signal });
+            } catch {
+              this.providers[i].detail = '環境檢查未完成，請重新偵測或確認程式位置。';
+            }
+            this.changed();
+          }
+        };
+        await Promise.all([worker(), worker(), worker()]);
+        if (signal.aborted)
+          this.notes.push('偵測已停止或超過一分鐘，尚未完成的項目保留在清單中，可重新偵測。');
+      } catch {
+        this.notes = [...this.configurationNotes, '環境偵測未完成，請重新偵測或手動指定 AI 程式。'];
+      } finally {
+        clearTimeout(timer);
+        if (this.selectedId && !this.providers.some((p) => p.id === this.selectedId)) {
+          this.providers.push({
+            id: this.selectedId,
+            provider: this.selectedInfo?.provider ?? 'codex',
+            label: this.selectedInfo?.label ?? '原先選用的 AI',
+            location: this.selectedInfo?.location ?? '',
+            installation: this.selectedInfo?.installation ?? '',
+            executable: this.selectedInfo?.executable ?? '',
+            version: '',
+            status: 'missing',
+            detail: '這次未找到先前選用的位置。可能已更新、移動或環境檢查未完成，請重新偵測或指定新版位置。',
+          });
+        }
+        this.scanning = false;
+        this.scanPending = null;
+        this.scanController = null;
         this.changed();
       }
-    } finally {
-      this.scanning = false;
-      this.changed();
-    }
+      return this.snapshot();
+    })();
+    return this.scanPending;
+  }
+  async cancelScan() {
+    this.scanController?.abort();
+    await this.scanPending;
     return this.snapshot();
   }
   async select(id) {
-    if (this.busy) throw new AppError('BUSY');
-    if (!this.providers.some((p) => p.id === id && p.status === 'ready'))
-      throw new AppError('AGENT_NOT_READY');
-    const file = path.join(this.home, `selection-${randomUUID()}.tmp`);
-    await fs.writeFile(file, JSON.stringify({ selectedId: id }), { mode: 0o600 });
-    await fs.rename(file, path.join(this.home, 'selection.json'));
+    if (this.busy || this.scanning) throw new AppError('BUSY');
+    const provider = this.providers.find((p) => p.id === id && p.status === 'ready');
+    if (!provider) throw new AppError('AGENT_NOT_READY');
+    await this.persist('selection', { selectedId: id, selectedInfo: provider });
     this.selectedId = id;
+    this.selectedInfo = provider;
     this.changed();
     return this.snapshot();
   }
@@ -363,6 +450,17 @@ export class AgentRunner {
       .catch((error) => {
         this.job.state = error.code === 'AGENT_CANCELLED' ? 'cancelled' : 'failed';
         this.job.error = safeError(error);
+        if (error.code === 'AGENT_LOGIN_REQUIRED') {
+          this.providers = this.providers.map((p) =>
+            p.id === target.id
+              ? {
+                  ...p,
+                  status: 'login',
+                  detail: '實際連線被拒絕，請在這個環境重新登入官方 CLI，再回來偵測。',
+                }
+              : p,
+          );
+        }
       })
       .finally(() => {
         this.job.finishedAt = new Date().toISOString();

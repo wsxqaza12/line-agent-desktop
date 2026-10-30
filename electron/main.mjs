@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, clipboard, shell, session } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard, shell, session, dialog } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { watch } from 'node:fs';
@@ -105,6 +105,30 @@ else
             case 'scanAssistants':
               data = await assistant.scan();
               break;
+            case 'stopAssistantScan':
+              data = await assistant.cancelScan();
+              break;
+            case 'chooseAssistantFile': {
+              if (!['codex', 'claude'].includes(args)) throw new AppError('INVALID_ARGUMENT');
+              if (assistant.busy || assistant.scanning) throw new AppError('BUSY');
+              const selected = await dialog.showOpenDialog(mainWindow, {
+                title: `選擇 ${args === 'codex' ? 'Codex' : 'Claude Code'} CLI 程式`,
+                properties: ['openFile'],
+                filters: [
+                  { name: 'CLI 程式', extensions: ['exe', 'js', 'cjs', 'mjs'] },
+                  { name: '所有檔案（含 WSL）', extensions: ['*'] },
+                ],
+              });
+              data =
+                selected.canceled || !selected.filePaths[0]
+                  ? assistant.snapshot()
+                  : await assistant.addManual(args, selected.filePaths[0]);
+              break;
+            }
+            case 'removeManualAssistant':
+              if (typeof args !== 'string') throw new AppError('INVALID_ARGUMENT');
+              data = await assistant.removeManual(args);
+              break;
             case 'selectAssistant':
               data = await assistant.select(args);
               break;
@@ -206,6 +230,7 @@ else
           event.preventDefault();
           closeAfterRead = true;
           mainWindow.webContents.send('operation-in-progress');
+          if (assistant.scanning) void assistant.cancelScan();
           if (assistant.busy)
             assistant.cancel().finally(() => {
               if (!service.busy && !assistant.scanning && !mainWindow.isDestroyed()) {
@@ -239,7 +264,9 @@ else
           const line = await mainWindow.webContents.executeJavaScript('window.lineAgent.status()');
           const mcp = await mainWindow.webContents.executeJavaScript('window.lineAgent.testMcp()');
           const workState = await mainWindow.webContents.executeJavaScript('window.lineAgent.work()');
-          const assistants = await mainWindow.webContents.executeJavaScript('window.lineAgent.scanAssistants()');
+          const assistants = await mainWindow.webContents.executeJavaScript(
+            'window.lineAgent.scanAssistants()',
+          );
           const uiWorkCount = await mainWindow.webContents.executeJavaScript(
             'document.querySelectorAll("article.work-card").length',
           );
@@ -249,7 +276,8 @@ else
             path.join(smokeDir, 'smoke.json'),
             JSON.stringify({ title, state, line, mcp, work: workState, assistants, uiWorkCount }, null, 2),
           );
-          exitCode = title === 'LINE Agent Desktop' && state.ok && mcp.ok && workState.ok && assistants.ok ? 0 : 1;
+          exitCode =
+            title === 'LINE Agent Desktop' && state.ok && mcp.ok && workState.ok && assistants.ok ? 0 : 1;
         } finally {
           quitting = true;
           app.exit(exitCode);

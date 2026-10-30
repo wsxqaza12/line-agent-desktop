@@ -1,5 +1,8 @@
 const messages = {
   AGENT_NOT_READY: 'AI 尚未就緒。請到「AI 助理」重新偵測，並選擇已登入的 Codex 或 Claude Code。',
+  AGENT_MANUAL_LIMIT: '最多保留 8 個手動位置，請先移除不再使用的設定。',
+  AGENT_INVALID_PATH:
+    '請選擇 Codex／Claude Code 的 CLI 執行檔（.exe 或 JavaScript 入口）。聊天視窗程式與 .cmd 捷徑無法使用。',
   AGENT_START_FAILED: '無法啟動 AI。請重新偵測安裝位置，或更新官方 CLI。',
   AGENT_CANCELLED: '已停止這次整理。已寫入的工作會保留。',
   AGENT_TIMEOUT: 'AI 超過 10 分鐘未完成，這次已停止。請縮短日期範圍後重試。',

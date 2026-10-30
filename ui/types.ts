@@ -94,6 +94,9 @@ export type WorkMerge = {
 export type Bridge = {
   assistant(): Promise<Result<AssistantState>>;
   scanAssistants(): Promise<Result<AssistantState>>;
+  stopAssistantScan(): Promise<Result<AssistantState>>;
+  chooseAssistantFile(provider: 'codex' | 'claude'): Promise<Result<AssistantState>>;
+  removeManualAssistant(id: string): Promise<Result<AssistantState>>;
   selectAssistant(id: string): Promise<Result<AssistantState>>;
   startOrganizing(args: { days: number; chatRef?: string }): Promise<Result<AssistantState>>;
   stopOrganizing(): Promise<Result<AssistantState>>;
@@ -121,8 +124,11 @@ export type AssistantProvider = {
   label: string;
   location: string;
   version: string;
-  status: 'ready' | 'login' | 'api' | 'update' | 'unknown';
+  status: 'ready' | 'login' | 'api' | 'update' | 'unknown' | 'missing';
   detail: string;
+  executable?: string;
+  installation?: string;
+  manual?: boolean;
 };
 export type AssistantJob = {
   id: string;
