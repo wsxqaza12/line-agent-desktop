@@ -13,9 +13,11 @@
 6. In an authorized local test profile, read a known chat through the packaged MCP.
    Check nonempty results, chat/account identity, source references, and revocation
    without restarting the MCP. Do not copy real chat data into this repository.
-7. Test the installer in a new destination; verify launch, bundled runtime and
-   generated connection paths from that destination. A new destination on an
-   existing PC is not a clean Windows VM test; disclose that distinction.
+7. Test a clean per-user install or an upgrade of the previous release as appropriate.
+   For upgrades, back up and hash the existing settings, gracefully close the app,
+   install to the same destination, then verify identical settings, work data and
+   connection paths. Never use synthetic tasks in the user's real profile. A local
+   upgrade is not a clean Windows VM test; disclose that distinction.
 8. Rebuild after any packaged source or runtime change. Run
    `py scripts/finalize-release.py` after the builder exits. This rebuilds the ZIP
    after NSIS adds its elevation helper, compares ZIP entries with an independent
@@ -33,6 +35,11 @@ No background poller, Windows scheduled task, auto-start or automatic updater is
 installed. Uninstalling preserves the app's settings; the user can remove them
 from the settings folder if desired. Remove the MCP entry from the Agent when
 uninstalling. A running MCP process may continue until that Agent closes it.
+
+The work board uses bundled Node/Electron's built-in SQLite. Verify desktop IPC
+and a separate native MCP process can update/read the same isolated work database.
+Pause must block both message reads and work reads/writes. Keep real excerpts and
+live screenshots outside the repository and release archives.
 
 Runtime source provenance:
 

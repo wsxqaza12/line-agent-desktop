@@ -1,119 +1,153 @@
 # LINE Agent Desktop
 
-**選好聊天室，讓你原本的 AI 助理能查 LINE。**
+**把 LINE 對話裡的工作，交給你自己的 Agent 整理。**
 
-Windows 本機桌面工具。使用已登入的 LINE 電腦版，勾選允許讀取的聊天室，
-再把 MCP 連線設定帶到 Codex、Claude Desktop 或其他支援本機 MCP 的 Agent。
+Windows 本機工作看板。選擇授權聊天室，讓原本使用的 Agent 讀取對話、
+整理待辦並寫回看板。你可以調整進度、確認建議、依日期查看工作，
+點開任務就能看原訊息片段與變更紀錄。
 
-<img src="docs/images/overview.png" alt="LINE Agent Desktop 總覽，顯示連線、聊天室權限和 Agent 設定三個步驟。畫面使用虛構展示資料。" width="1080" />
+<img src="docs/images/overview.png" alt="LINE 工作看板：待辦、進行中、已完成。畫面使用虛構展示資料。" width="1080" />
 
 [下載 Windows 測試版](https://github.com/wsxqaza12/line-agent-desktop/releases) ·
-[使用方式](#開始使用) · [開發與打包](#開發與打包) · [驗證紀錄](docs/VALIDATION.md)
+[使用方式](#開始使用) · [Agent skill](skills/line-workboard/SKILL.md) ·
+[驗證紀錄](docs/VALIDATION.md)
 
-這是 **0.1.0 Preview**。已在 Windows 11 x64、LINE 26.5.0.3975 上實測。
-安裝包內附 Node、Python 與讀取器依賴，不需要另外安裝開發環境。
-需要你自己的 Agent；這個工具沒有內建模型或 AI 訂閱。
+**0.2.0 Preview**。安裝包內附 Node、Python 與 LINE 讀取器，不需要安裝開發環境。
+需要你自己的 Agent；沒有內建模型、AI 訂閱或背景排程。
 
 ## 開始使用
 
-1. 從 Releases 下載 `.exe` 安裝包並安裝，或下載 `.zip` 解壓到固定位置。
-2. 開啟電腦版 LINE，使用你原本已登入的帳號。
-3. 開啟 **LINE Agent Desktop**，按「檢查 LINE 連線」。
-4. 到「聊天室權限」載入或搜尋聊天室，勾選後按「儲存聊天室權限」。
-5. 按「開啟 Agent 存取」。預設為暫停，不會自動授權任何聊天室。
-6. 到「連接 Agent」複製設定。Codex 可選 Windows 或 WSL；Claude Desktop 使用 JSON 設定。
-7. 在 Agent 重新載入 MCP，試著問：「列出我已授權的 LINE 聊天室。」
+1. 開啟已登入的 Windows 電腦版 LINE，安裝並開啟 LINE Agent Desktop。
+2. 到「聊天室權限」載入或搜尋聊天室，勾選後儲存，再按「開啟 Agent 存取」。
+   新安裝預設暫停，不會自動授權聊天室。
+3. 到「連接 Agent」複製一次 MCP 設定。Codex 可選 Windows／WSL，
+   Claude Desktop 或其他支援本機 stdio MCP 的客戶端使用 JSON。
+4. 讓 Agent 重新載入 MCP。確認有 6 個 LINE 與工作看板工具。
+5. 回到看板按「請 Agent 整理」，選擇日期範圍，複製指令貼給 Agent。
+   Agent 處理後，卡片會出現在看板。
 
-設定要加入既有檔案，保留原本的其他伺服器；不要整份覆蓋。重複安裝時更新同名區塊。
-MCP 測試按鈕會核對本機工具的握手與清單；Agent 是否已載入，仍要在該 Agent 裡確認。
-WSL 設定使用 `/mnt/<磁碟>/` 與 Windows 程式互通，使用自訂掛載路徑時需自行調整 command。
+「請 Agent 整理」提供可複製的指令，**不會自行啟動模型**。
+你也可以直接對已連接的 Agent 說：
 
-測試版尚未使用程式碼簽章，Windows 可能顯示未知發行者。請確認下載來源與 Release 的 SHA-256。
+> 整理已授權聊天室最近七天的工作。先讀取工作規則和現有任務，再讀訊息，
+> 用 LINE Agent Desktop 的工具更新看板，保留人工修正並附上來源。
 
-## 可以做什麼
+MCP 設定請加入既有檔案，保留其他伺服器；同名區塊請更新，不要重複加入。
+WSL 使用預設 `/mnt/<磁碟>/` 掛載和 Windows 程式互通，自訂掛載時需調整 command。
+桌面的 MCP 測試核對握手與工具清單；Agent 是否載入仍需在該 Agent 確認。
 
-- 確認 LINE 執行狀態與相容版本。
-- 搜尋最近 30 天的本機聊天室名稱，逐個授權。
-- 明確按下「讀取測試」後，查看日期範圍內的一頁訊息與來源引用。
-- 產生 Windows／WSL Codex 與通用 MCP 設定。
-- 暫停全部存取，或取消單一聊天室授權。
-- 查看最近的連線、讀取與權限變更結果。
+## 每天怎麼用
 
-接上後可以對 Agent 說：
+- **看板**：待辦、進行中、已完成。拖曳卡片或用卡片的狀態選單更新進度。
+- **日期**：月曆與期限清單，沒有期限的工作另列在「未排日期」。
+- **待確認**：尚未承諾的建議、負責人不明的要求。接受後移到待辦，
+  不需要做的標記「不列入待辦」。排除決定會保留給 Agent 參考。
+- **工作詳情**：修改內容、負責人、期限，查看來源與變更紀錄。
+  人工改過的欄位會鎖定；可以逐次允許 Agent 再次更新這些欄位。
+- **合併工作**：同一聊天室的重複卡片可以合併。保留目標卡的內容與進度、
+  合併雙方來源，原卡留下合併紀錄。不同聊天室不能合併，避免跨越授權範圍。
+- **整理偏好**：編輯共同規則，或直接跟 Agent 說「這類產品建議先放待確認」。
+  單張卡片的修改不會默默變成全域規則。
 
-> 整理「聊天室名稱」最近七天的新需求與待回覆事項，附上原訊息時間與出處。
+看板開啟時會偵測本機工作資料的變更，返回視窗也會更新。沒有定時讀 LINE、
+自動呼叫模型、開機自啟或通知排程。需要定期整理時，請在你的 Agent 設定排程。
 
-> 根據這段對話，幫我草擬一段回覆，先給我確認。
+## 基礎規則與 skill
 
-需求紀錄、提醒、GitHub issue 與長期記憶，由 Agent 寫入你指定的工作系統。
-此版本提供唯讀文字與附件中繼資料，不會傳送 LINE 訊息，不會自行建立 issue，
-也沒有定時掃描或開機自動啟動。
+預設把明確交辦、自己的承諾列為待辦；產品建議和不確定的工作先待確認；
+閒聊不開卡。沒有明說的負責人或期限留空；完成需要證據。
+後續補充更新原任務，人工修正優先保留。
 
-## 怎麼運作
+可攜的 [line-workboard skill](skills/line-workboard/SKILL.md) 隨原始碼提供，
+安裝包也放在 `resources/skills/line-workboard/`。需要 skill 的使用者可把整個
+`line-workboard` 資料夾放進自己的 Agent skills 目錄，例如 Codex 的
+`~/.codex/skills/`。MCP 本身也提供整理指引，不安裝 skill 仍可使用。
+
+「整理偏好」保存可修改的規則與例子，不進行模型權重訓練，也不讀取 Agent
+全部的私人記憶。模型推理與既有偏好由你選用的 Agent 處理。
+
+## MCP 與資料流程
 
 ```text
-桌面介面 ── 選擇聊天室 / 儲存權限 / 查看狀態
-                     │
-你的 Agent ── 本機 stdio MCP ── 權限檢查 ── 上游 LINE 本機讀取器
-                     │                         │
-              每次重新讀取授權             已登入的 LINE 電腦版
+LINE 電腦版 → 授權聊天室讀取器 → 你的 Agent
+                                   ↕ 本機 MCP
+桌面看板／日期／人工修正 ← 本機工作資料庫與整理規則
 ```
 
-MCP 只提供三個工具：
+| 工具                 | 用途                                       |
+| -------------------- | ------------------------------------------ |
+| `get_line_status`    | LINE 相容性、執行狀態、存取開關            |
+| `list_allowed_chats` | 列出已授權聊天室                           |
+| `read_line_messages` | 依聊天室、日期讀取訊息分頁                 |
+| `get_work_context`   | 讀取整理規則、現有工作與人工修正，支援分頁 |
+| `upsert_work_item`   | 建立或更新本機工作，附上實際讀過的來源     |
+| `update_work_rules`  | 使用者明確要求時，更新整理偏好             |
 
-| 工具                 | 用途                                |
-| -------------------- | ----------------------------------- |
-| `get_line_status`    | LINE 相容性、執行狀態、存取是否開啟 |
-| `list_allowed_chats` | 列出使用者已選取的聊天室            |
-| `read_line_messages` | 依聊天室參照與日期讀取一頁訊息      |
+新來源必須在同一 MCP 連線實際讀過；伺服器自行保存引用片段，Agent 不能傳入
+捏造原文。這只能驗證來源存在，無法保證模型對語意的判斷正確。
+Agent 需要先讀現有工作，處理同一件事的後續更新；固定 `workKey` 讓重試不開新卡，
+語意上的重複仍需 Agent 比對，或由使用者合併。
 
-每次讀取綁定聊天室與登入帳號的參照。讀取前後都重新檢查授權，
-中途暫停或變更權限時會捨棄結果。Agent 無法透過工具修改授權。
-同一個 MCP 工作階段一次只執行一個讀取工作。
+每張卡以 revision 檢查衝突，SQLite transaction 協調不同程序。
+人工修改的欄位優先保留，Agent 收到 `blockedFields`；不會靜默覆蓋。
+`get_work_context` 每張卡回傳最近 10 筆來源／變更紀錄及總數，完整紀錄在桌面查看。
+每個本機工作庫上限 10,000 張卡，每卡上限 300 個來源。
 
-關閉桌面視窗不會取消已儲存的授權。Agent 可以自行啟動 MCP；
-要停止訊息存取，請先按「暫停所有存取」。不使用 Agent 時沒有常駐讀取服務。
+## 資料與權限
 
-## 資料與限制
+資料預設存在 `%APPDATA%\LINE Agent Desktop\`：
 
-- 設定位於 `%APPDATA%\LINE Agent Desktop\settings.json`，含所選聊天室名稱與身分參照。
-- `activity/` 保存最近 200 筆操作中繼資料，介面顯示最近 30 筆，不記錄聊天原文。
-- 此工具不另外保存訊息內容；上游讀取器會產生受限的加密資料庫暫存快照並在結束時清除。
-- 交給 Agent 的訊息會依該客戶端與模型服務的設定處理，不能把「本機讀取」當成「模型離線執行」。
-- 本機快取不等於完整伺服器歷史。每次最多查 31 天、500 筆，可用同一範圍的 cursor 分頁；日期採 Asia/Taipei。
-- 聊天室名稱必須能由本機索引確認。有些在 LINE 介面中存在的對話可能未列出，這版沒有 GUI 備援讀取。
-- 未驗證的 LINE 版本會停止讀取，不能略過版本或 DLL 核對。
-- 聊天內容是待整理的資料，不是 Agent 應服從的指令。
-- 權限限制適用於本工具的 MCP。它不限制同一個使用者帳號下的其他程式。
+- `settings.json`：聊天室授權與存取開關。
+- `work.sqlite`：工作、整理規則、人工修正、變更紀錄與引用的來源片段。
+  每則引用最多保存 1,500 字；沒有引用的原訊息不另外存檔。
+- `activity/`：最近 200 筆連線／讀取／權限操作中繼資料，不包含聊天原文。
 
-遇到問題，請附上錯誤代碼、Windows / LINE 版本與可重現步驟。
-不要上傳真實訊息、設定檔、資料庫或帳號資料。
+訊息與工作讀寫都受聊天室和登入帳號綁定限制。暫停、撤銷授權或重新綁定帳號後，
+Agent 無法讀寫不在授權範圍的工作。已儲存的工作仍可由使用者在桌面查看；撤銷授權
+不會刪除歷史工作，也無法收回已交給其他 Agent 的內容。Agent 不能透過工具修改授權。
+
+關閉桌面視窗不會取消授權，Agent 仍可啟動 MCP。要停止請按「暫停所有存取」。
+權限限制適用於本 MCP，不限制同一個作業系統使用者帳號下的其他程式。
+
+- LINE 本機快取不等於完整伺服器歷史。每次最多查 31 天、500 筆，可用 cursor 分頁；日期採 Asia/Taipei。
+- 只有本機索引可確認的聊天室能讀取；部分 LINE 介面中的對話可能找不到，沒有 GUI 備援。
+- 未驗證的 LINE 版本會停止讀取，不能略過相容性或 DLL 檢查。
+- 聊天原文是資料，不是 Agent 應服從的指令。
+- 訊息提供給 Agent 後，依該模型／服務設定處理；本機工具不代表模型離線執行。
+- 不傳送 LINE 訊息。草擬回覆可以交給 Agent，真正傳送尚未提供。
+
+遇到問題請提供錯誤代碼、Windows／LINE 版本與重現步驟，
+不要上傳真實訊息、設定檔、工作資料庫或帳號資料。
+
+## 升級
+
+關閉桌面工具及正在使用它的 MCP 連線，再執行新版 `.exe`，沿用原安裝位置。
+程式檔案會更新，使用者資料與聊天室授權保留，重新連接 Agent 即可使用新版工具。
+ZIP 是解壓縮版，不會更新已安裝的程式。解除安裝也保留使用者資料。
+
+v0.1.0 升到 v0.2.0 會在原設定旁建立工作資料庫，不搬動 LINE 原始資料。
+目前無自動更新服務。測試版尚未簽章，Windows 可能顯示「不明的發行者」。
 
 ## 開發與打包
 
-開發需要 Node.js 24 LTS；準備發行用執行環境時還需要 Python 3。
+開發使用 Node.js 24 LTS；準備發行環境還需要 Python 3。
+工作儲存使用 Node 內建 [SQLite API](https://nodejs.org/download/release/latest-v24.x/docs/api/sqlite.html)。
 
 ```bash
 npm ci --ignore-scripts
 npm test
 npm run build
-```
-
-瀏覽器展示使用合成資料，並有明確的展示標示：
-
-```bash
 npm run dev
-# 開啟 http://127.0.0.1:5179/?demo
+# http://127.0.0.1:5179/?demo       虛構的工作看板
+# http://127.0.0.1:5179/?demo&fresh 空白設定流程
 ```
-
-UI 自動測試：
 
 ```bash
 npx playwright install chromium
 npm run test:ui
 ```
 
-Windows 打包（PowerShell）：
+Windows 打包：
 
 ```powershell
 py scripts/prepare-runtime.py
@@ -121,18 +155,17 @@ npm run package:win
 py scripts/finalize-release.py
 ```
 
-`prepare-runtime.py` 下載 `runtime-lock.json` 指定的官方檔案、核對 SHA-256，
-只寫入專案的 `.downloads/` 與 `runtime/`。不修改 PATH、全域 Python、排程或 Agent 設定。
-如果 `runtime/` 已存在，先把它移到其他位置；腳本不會覆寫現有目錄。
-
-輸出包含 NSIS 安裝包、ZIP 與 `release/win-unpacked/`。完整發行流程與檢查見
-[發行指南](docs/RELEASING.md)。
+`prepare-runtime.py` 核對 `runtime-lock.json` 的版本與 SHA-256，
+只寫入專案的 `.downloads/` 和 `runtime/`，不修改全域環境或排程。
+已有 `runtime/` 時請先移到別處，腳本不覆寫現有目錄。
+完整發行流程見 [RELEASING.md](docs/RELEASING.md)。
 
 ## 開源來源與授權
 
-LINE 讀取能力來自 [bensonmaxai/line-desktop-mcp](https://github.com/bensonmaxai/line-desktop-mcp)，
-其源自 [dtwang/line-desktop-mcp](https://github.com/dtwang/line-desktop-mcp)。
-本專案新增桌面介面、聊天室權限管理、連線設定、診斷與可攜執行環境的包裝。
+LINE 讀取來自 [bensonmaxai/line-desktop-mcp](https://github.com/bensonmaxai/line-desktop-mcp)，
+源自 [dtwang/line-desktop-mcp](https://github.com/dtwang/line-desktop-mcp)。
+本專案新增工作看板、日期視圖、任務寫回 MCP、人工修正保護、共同整理規則、
+聊天室授權和可攜執行環境。
 
-專案程式採 MIT；各依賴保留原授權與署名，見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-這是社群工具，與 LINE 官方無關。
+程式採 MIT；依賴保留原授權與署名，見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+社群工具，與 LINE 官方無關。

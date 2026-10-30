@@ -9,6 +9,10 @@ contextBridge.exposeInMainWorld(
     saveChats: (refs) => invoke('saveChats', refs),
     setEnabled: (enabled) => invoke('setEnabled', enabled),
     read: (args) => invoke('read', args),
+    work: () => invoke('work'),
+    editWork: (args) => invoke('editWork', args),
+    mergeWork: (args) => invoke('mergeWork', args),
+    saveRules: (args) => invoke('saveRules', args),
     connection: () => invoke('connection'),
     testMcp: () => invoke('testMcp'),
     copy: (text) => invoke('copy', text),
@@ -17,6 +21,11 @@ contextBridge.exposeInMainWorld(
       const listener = () => callback();
       ipcRenderer.on('operation-in-progress', listener);
       return () => ipcRenderer.removeListener('operation-in-progress', listener);
+    },
+    onWorkChanged: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('work-changed', listener);
+      return () => ipcRenderer.removeListener('work-changed', listener);
     },
   }),
 );

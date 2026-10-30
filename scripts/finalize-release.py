@@ -49,12 +49,11 @@ def main():
                     raise SystemExit('ZIP content mismatch: ' + name)
     print(f'ZIP vs independent directory walk: {len(expected)} files, all SHA-256 hashes match.', flush=True)
     sums = []
-    for p in sorted(RELEASE.iterdir()):
-        if p.suffix in ['.exe', '.zip']:
-            with p.open('rb') as source:
-                sha = digest(source)
-            sums.append(f'{sha}  {p.name}')
-            print(f'{p.name}: {p.stat().st_size} bytes; SHA-256 {sha}', flush=True)
+    for p in [RELEASE / f'LINE-Agent-Desktop-{VERSION}-x64.exe', ZIP]:
+        with p.open('rb') as source:
+            sha = digest(source)
+        sums.append(f'{sha}  {p.name}')
+        print(f'{p.name}: {p.stat().st_size} bytes; SHA-256 {sha}', flush=True)
     (RELEASE / 'SHA256SUMS.txt').write_text('\n'.join(sums) + '\n')
     (RELEASE / 'verification.json').write_text(json.dumps({
         'packageFiles': len(expected), 'zipDirectoryNamesMatch': True,

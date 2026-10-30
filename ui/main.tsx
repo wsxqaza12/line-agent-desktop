@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Search,
   Settings2,
+  SlidersHorizontal,
   ShieldCheck,
   Sparkles,
   Terminal,
@@ -30,7 +31,9 @@ import {
 } from 'lucide-react';
 import { demoBridge } from './demo';
 import type { Bridge, Chat, State, LineStatus, Result, Connection, Page } from './types';
+import { Workbench } from './workbench';
 import './style.css';
+import './workbench.css';
 
 const demo = !window.lineAgent && new URLSearchParams(location.search).has('demo');
 const bridge: Bridge | undefined = window.lineAgent ?? (demo ? demoBridge : undefined);
@@ -50,14 +53,15 @@ const labels: Record<string, string> = {
   mcp_test: '測試 MCP 連線',
 };
 const nav = [
-  { id: 'overview', label: '總覽', icon: LayoutDashboard },
+  { id: 'work', label: '工作看板', icon: LayoutDashboard },
+  { id: 'rules', label: '整理偏好', icon: SlidersHorizontal },
   { id: 'chats', label: '聊天室權限', icon: MessagesSquare },
   { id: 'connect', label: '連接 Agent', icon: Plug },
   { id: 'settings', label: '狀態與說明', icon: Settings2 },
 ];
 
 function App() {
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState('work');
   const [state, setState] = useState<State | null>(null);
   const [line, setLine] = useState<LineStatus | null>(null);
   const [busy, setBusy] = useState('');
@@ -211,12 +215,12 @@ function App() {
           <div className="local-card">
             <ShieldCheck size={20} />
             <div>
-              <strong>在你的電腦上連接</strong>
-              <p>由你決定助理能看什麼</p>
+              <strong>工作留在你的電腦</strong>
+              <p>讓自己的 Agent 幫忙整理</p>
             </div>
           </div>
           <div className="version">
-            <span className="dot" /> Windows · v0.1.0 <span>PREVIEW</span>
+            <span className="dot" /> Windows · v0.2.0 <span>PREVIEW</span>
           </div>
         </div>
       </aside>
@@ -249,175 +253,16 @@ function App() {
           </div>
         )}
         <div className="content">
-          {tab === 'overview' && (
-            <>
-              <div className="heading">
-                <div className="eyebrow">A LITTLE BRIDGE, A LITTLE LESS BUSY.</div>
-                <h1>讓助理，跟上你的 LINE。</h1>
-                <p>連上熟悉的對話，把整理與追蹤交給你自己的 Agent。</p>
-              </div>
-              <section className="hero-card">
-                <div className="hero-copy">
-                  <span className="tag">
-                    <span className="dot" /> 你的 LINE，你做主
-                  </span>
-                  <h2>
-                    重要的對話，
-                    <br />
-                    不再埋在訊息裡。
-                  </h2>
-                  <p>
-                    選好聊天室，就能請助理整理客戶需求、
-                    <br className="desktop-break" />
-                    掌握專案進度，或找回上次聊到的事。
-                  </p>
-                  <button
-                    className="button primary"
-                    disabled={!available || !!busy}
-                    onClick={() => (!ready ? check() : !allowed.length ? setTab('chats') : connect())}
-                  >
-                    {!ready ? '檢查 LINE 連線' : !allowed.length ? '選擇聊天室' : '連接我的 Agent'}
-                    {buttonIcon('status')}
-                  </button>
-                  <span className="hero-footnote">
-                    <Monitor size={14} /> 使用這台電腦已登入的 LINE
-                  </span>
-                </div>
-                <div className="hero-art" aria-hidden="true">
-                  <div className="orbit orbit-one" />
-                  <div className="orbit orbit-two" />
-                  <div className="art-window">
-                    <div className="art-dots">
-                      <i />
-                      <i />
-                      <i />
-                      <span>一段對話，一個線索</span>
-                    </div>
-                    <div className="art-message">
-                      <div className="mini-avatar">森</div>
-                      <div>
-                        <span className="skeleton w-80" />
-                        <span className="skeleton w-120" />
-                      </div>
-                    </div>
-                    <div className="art-reply">
-                      <span className="skeleton w-90" />
-                      <CheckCheck size={13} />
-                    </div>
-                    <div className="art-line" />
-                    <div className="art-summary">
-                      <div className="sparkle-box">
-                        <Sparkles size={18} />
-                      </div>
-                      <div>
-                        <strong>讓下一步更清楚</strong>
-                        <span>需求 · 進度 · 待回覆</span>
-                      </div>
-                      <CheckCircle2 size={19} />
-                    </div>
-                  </div>
-                  <div className="floating-badge">
-                    <ShieldCheck size={16} /> 只讀取你選的聊天室
-                  </div>
-                </div>
-              </section>
-              <div className="section-title">
-                <h2>三步，接上你的助理</h2>
-                <span>從這台電腦開始</span>
-              </div>
-              <div className="steps">
-                {[
-                  {
-                    title: '連接 LINE',
-                    description: ready ? `已偵測 LINE ${line?.version}` : '確認 LINE 已開啟並登入',
-                    action: check,
-                    done: ready,
-                  },
-                  {
-                    title: '選擇聊天室',
-                    description: allowed.length
-                      ? `已授權 ${allowed.length} 個聊天室`
-                      : '決定助理能讀取哪些對話',
-                    action: () => setTab('chats'),
-                    done: allowed.length > 0,
-                  },
-                  {
-                    title: '連接 Agent',
-                    description: mcpTested ? '本機 MCP 握手測試已通過' : '把連線設定帶到你的 Agent',
-                    action: connect,
-                    done: mcpTested,
-                  },
-                ].map((s, i) => (
-                  <button
-                    className={`step-card ${step === i ? 'current' : ''}`}
-                    key={s.title}
-                    disabled={!available || !!busy}
-                    onClick={s.action}
-                  >
-                    <span className={`step-number ${s.done ? 'done' : ''}`}>
-                      {s.done ? <Check size={17} /> : `0${i + 1}`}
-                    </span>
-                    <div>
-                      <h3>{s.title}</h3>
-                      <p>{s.description}</p>
-                    </div>
-                    <ChevronRight size={17} />
-                  </button>
-                ))}
-              </div>
-              <div className="bottom-grid">
-                <section className="panel">
-                  <div className="panel-heading">
-                    <h2>
-                      <Clock3 size={17} />
-                      最近活動
-                    </h2>
-                    <button className="text-button" onClick={() => setTab('settings')}>
-                      查看狀態 <ArrowUpRight size={14} />
-                    </button>
-                  </div>
-                  {state?.activity.length ? (
-                    <div className="activity-list">
-                      {state.activity.slice(0, 3).map((a) => (
-                        <div className="activity" key={a.id}>
-                          <span className={`activity-dot ${a.outcome === 'error' ? 'failed' : ''}`} />
-                          <div>
-                            {labels[a.action] ?? a.action}
-                            {a.count !== undefined && <small>{a.count} 筆</small>}
-                          </div>
-                          <time>
-                            {new Date(a.at).toLocaleTimeString('zh-TW', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </time>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="quiet-state">
-                      <div className="empty-icon">
-                        <Clock3 size={22} />
-                      </div>
-                      <div>
-                        這裡會記錄連線與讀取狀態<span>操作時才讀取，不會定時掃描訊息。</span>
-                      </div>
-                    </div>
-                  )}
-                </section>
-                <section className="prompt-card">
-                  <span className="eyebrow">
-                    <Sparkles size={14} /> 連接後，試著這樣問
-                  </span>
-                  <p>
-                    「幫我看一下客戶這週的新需求，
-                    <br />
-                    附上原訊息的日期與出處。」
-                  </p>
-                  <span>整理結果留在你選用的 Agent 與工作系統。</span>
-                </section>
-              </div>
-            </>
+          {(tab === 'work' || tab === 'rules') && (
+            <Workbench
+              key={tab}
+              bridge={bridge}
+              chats={allowed}
+              enabled={enabled}
+              rulesOnly={tab === 'rules'}
+              onChats={() => setTab('chats')}
+              onConnect={connect}
+            />
           )}
 
           {tab === 'chats' && (
@@ -554,7 +399,7 @@ function App() {
               <div className="heading">
                 <div className="eyebrow">BRING YOUR OWN AGENT</div>
                 <h1>接上你習慣的助理。</h1>
-                <p>整理與推理在你的 Agent 裡進行，這裡負責連接 LINE。</p>
+                <p>設定一次，之後直接叫 Agent 整理 LINE 工作看板。</p>
               </div>
               <div className="client-tabs" role="tablist" aria-label="選擇 Agent">
                 {[
@@ -627,7 +472,7 @@ function App() {
                         setMcpTested(r.connected);
                         await reload();
                         setNotice({
-                          text: '本機 MCP 連線成功。請在 Agent 重新載入設定後，確認已出現 3 個 LINE 工具。',
+                          text: '本機 MCP 連線成功。請在 Agent 重新載入設定後，確認已出現 6 個 LINE 與工作看板工具。',
                         });
                       })
                     }
@@ -644,7 +489,7 @@ function App() {
                 </h2>
                 {[
                   '列出我已授權的 LINE 聊天室。',
-                  '整理「聊天室名稱」最近七天的新需求與待回覆事項，附上原訊息時間與出處。',
+                  '請用 LINE Agent Desktop 的 get_work_context 讀取規則與現有任務，再整理已授權聊天室最近七天的工作，用 upsert_work_item 寫回看板，保留人工修正並附上來源。',
                   '根據剛才的對話，幫我草擬一段回覆，先給我確認。',
                 ].map((text) => (
                   <button key={text} onClick={() => copy(text)} disabled={!available || !!busy}>
@@ -655,7 +500,7 @@ function App() {
               </section>
               <p className="help-line">
                 <ShieldCheck size={16} /> 工具在本機讀取；提供給 Agent
-                的內容，會依你選用的模型與服務設定處理。此版本提供唯讀連線。
+                的內容，會依你選用的模型與服務設定處理。可讀取 LINE、更新本機工作看板；不會傳送 LINE 訊息。
               </p>
             </>
           )}
@@ -692,7 +537,7 @@ function App() {
                 </div>
                 <div>
                   <span>訊息傳送</span>
-                  <strong>此版本提供唯讀功能</strong>
+                  <strong>尚未提供傳送功能</strong>
                 </div>
                 <div>
                   <span>本機執行環境</span>
@@ -705,8 +550,9 @@ function App() {
                 <section className="panel detail-copy">
                   <h2>資料存在哪裡？</h2>
                   <p>
-                    工具保存聊天室授權與操作結果，不另外保存訊息內容。需求、待辦與摘要，交由你的 Agent
-                    寫入你指定的系統。
+                    聊天室授權、工作看板、整理規則與變更紀錄保存在本機。Agent 引用的來源會保存最多 1,500
+                    字片段，未引用的訊息不另外存檔。暫停或撤銷授權會停止 Agent
+                    存取，已保存的工作仍可由你查看。
                   </p>
                   <button
                     className="button secondary"
@@ -765,7 +611,7 @@ function App() {
           )}
           <footer className="footer">
             <span>LINE Agent Desktop</span>
-            <span>把對話留在身邊，讓下一步更清楚。</span>
+            <span>對話裡的工作，有地方接著做。</span>
             <ShieldCheck size={14} />
           </footer>
         </div>

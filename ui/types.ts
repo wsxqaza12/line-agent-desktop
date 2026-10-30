@@ -41,8 +41,63 @@ export type Page = {
 export type ReadArgs = { chatRef: string; dateFrom: string; dateTo: string; limit?: number; cursor?: string };
 export type Connection = { json: string; codex: string; codexWsl: string };
 export type Result<T> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
+export type WorkStatus = 'review' | 'todo' | 'doing' | 'done' | 'dismissed';
+export type WorkFields = {
+  title: string;
+  description: string;
+  status: WorkStatus;
+  owner: string | null;
+  dueDate: string | null;
+};
+export type WorkItem = WorkFields & {
+  id: string;
+  workKey: string;
+  chatRef: string;
+  chatName: string;
+  ownSenderRef: string;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+  locks: (keyof WorkFields)[];
+  mergedInto: string | null;
+  sources: {
+    sourceRef: string;
+    date: string;
+    time: string;
+    senderRef: string;
+    text: string;
+    truncated: boolean;
+  }[];
+  history: {
+    at: string;
+    actor: 'agent' | 'human';
+    reason: string;
+    changes: Record<string, unknown>;
+    blockedFields: string[];
+  }[];
+};
+export type WorkRules = { text: string; revision: number; updatedAt: string | null };
+export type WorkSnapshot = { items: WorkItem[]; rules: WorkRules };
+export type WorkEdit = {
+  id: string;
+  expectedRevision: number;
+  patch: Partial<WorkFields>;
+  reason?: string;
+  unlockFields?: (keyof WorkFields)[];
+};
+export type WorkMerge = {
+  targetId: string;
+  targetRevision: number;
+  sourceId: string;
+  sourceRevision: number;
+};
 export type Bridge = {
   onClosing?(callback: () => void): () => void;
+  onWorkChanged?(callback: () => void): () => void;
+  work(): Promise<Result<WorkSnapshot>>;
+  editWork(args: WorkEdit): Promise<Result<WorkItem>>;
+  mergeWork(args: WorkMerge): Promise<Result<WorkItem>>;
+  saveRules(args: { text: string; expectedRevision: number }): Promise<Result<WorkRules>>;
   state(): Promise<Result<State>>;
   status(): Promise<Result<LineStatus>>;
   recent(query: string): Promise<Result<Recent>>;

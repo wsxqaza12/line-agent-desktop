@@ -20,7 +20,16 @@ const messages = {
   LOCAL_READER_TIMEOUT: '讀取超時。請確認 LINE 已完成同步後重試。',
   BUSY: '已有一個讀取作業正在執行，請稍後再試。',
   NO_CHATS: '請至少選擇一個聊天室，再啟用存取。',
-  UNKNOWN_TOOL: '不支援這個操作。此版本只提供讀取功能。',
+  UNKNOWN_TOOL: '不支援這個操作。',
+  WORK_NOT_FOUND: '找不到這件工作，請重新整理看板。',
+  WORK_CONFLICT: '這件工作或規則剛被更新。請重新整理，再套用你的變更。',
+  WORK_MERGED: '這件工作已合併，請重新讀取看板並更新合併後的任務。',
+  WORK_BUSY: '工作資料正被另一個程序更新，請稍後重試。',
+  WORK_STORE_INVALID: '無法讀取工作資料庫，請保留原檔並檢查備份。',
+  WORK_VERSION_NEWER: '工作資料由較新版本建立，請更新桌面工具後再開啟。',
+  WORK_LIMIT: '工作資料已達本版容量上限，這次沒有寫入。',
+  SOURCE_NOT_OBSERVED: '請先在同一個 MCP 連線讀取來源訊息，再引用 sourceRef 建立工作。',
+  RULE_CHANGE_NOT_REQUESTED: '只有使用者要求修改整理偏好時，Agent 才能更新規則。',
 };
 export class AppError extends Error {
   constructor(code, message) {

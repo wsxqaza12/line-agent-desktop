@@ -1,4 +1,5 @@
 import type { Bridge, Chat, Settings, Result } from './types';
+import { demoWork, demoEdit, demoMerge, demoRules } from './demo-work';
 const ownSenderRef = 'sender:' + '1'.repeat(24);
 const names = ['森野設計｜網站專案', 'Alex Chen', '產品交流小聚', '週末的咖啡約', '讀書會・第二季'];
 const chats: Chat[] = names.map((chatName, i) => ({
@@ -8,12 +9,22 @@ const chats: Chat[] = names.map((chatName, i) => ({
   ownSenderRef,
   lastMessageAt: new Date(Date.now() - i * 3600000).toISOString(),
 }));
-let settings: Settings = { schemaVersion: 1, enabled: false, chats: [], revision: 'demo' };
+const fresh = new URLSearchParams(location.search).has('fresh');
+let settings: Settings = {
+  schemaVersion: 1,
+  enabled: !fresh,
+  chats: fresh ? [] : chats.slice(0, 2),
+  revision: 'demo',
+};
 const ok = async <T>(data: T): Promise<Result<T>> => {
   await new Promise((r) => setTimeout(r, 180));
-  return { ok: true, data };
+  return { ok: true, data: structuredClone(data) };
 };
 export const demoBridge: Bridge = {
+  work: () => ok(demoWork()),
+  editWork: (args) => ok(demoEdit(args)),
+  mergeWork: (args) => ok(demoMerge(args)),
+  saveRules: (args) => ok(demoRules(args)),
   state: () =>
     ok({
       settings,
@@ -90,7 +101,14 @@ export const demoBridge: Bridge = {
   testMcp: () =>
     ok({
       connected: true,
-      tools: ['get_line_status', 'list_allowed_chats', 'read_line_messages'],
+      tools: [
+        'get_line_status',
+        'list_allowed_chats',
+        'read_line_messages',
+        'get_work_context',
+        'upsert_work_item',
+        'update_work_rules',
+      ],
       testedAt: new Date().toISOString(),
     }),
   copy: async (text) => {

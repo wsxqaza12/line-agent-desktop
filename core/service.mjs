@@ -43,6 +43,7 @@ export class LineService {
     this.backend = backend;
     this.busy = false;
     this.candidates = new Map();
+    this.receipts = new Map();
   }
   async state() {
     return {
@@ -134,6 +135,20 @@ export class LineService {
         if (page.chatRef !== chat.chatRef || page.ownSenderRef !== chat.ownSenderRef)
           throw new AppError('CHAT_IDENTITY_CHANGED');
         await this.store.record('read', 'success', { chatRef: chat.chatRef, count: page.count });
+        // Memory only: persist an excerpt only when the agent cites it in a work item.
+        for (const message of page.messages) {
+          this.receipts.set(message.sourceRef, {
+            sourceRef: message.sourceRef,
+            chatRef: chat.chatRef,
+            ownSenderRef: chat.ownSenderRef,
+            permissionRevision: after.revision,
+            date: message.date ?? '',
+            time: message.time ?? '',
+            senderRef: message.senderRef ?? '',
+            text: String(message.text ?? ''),
+          });
+        }
+        while (this.receipts.size > 5000) this.receipts.delete(this.receipts.keys().next().value);
         return page;
       } catch (error) {
         await this.store.record('read', 'error', { chatRef: args.chatRef, ...safeError(error) });
