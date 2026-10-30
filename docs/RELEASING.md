@@ -3,6 +3,11 @@
 1. Run `npm ci --ignore-scripts` in an isolated checkout. Before replacing an
    existing node_modules directory, check whether it is shared or a symlink.
 2. Run `npm test`, `npm run build` and `npm run test:ui`. Inspect actual exit codes.
+   Exercise native Windows and WSL discovery. Test both CLI engines with a
+   synthetic chat in an isolated profile: structured result, real source writeback,
+   nonzero exit, cancellation and process disappearance. Never load credentials
+   yourself or let an API key replace subscription authentication. Test discovery
+   in the packaged executable as well as the source checkout.
 3. Run `py scripts/prepare-runtime.py` on Windows (or `python3` on Linux).
    All artifact hashes must match runtime-lock.json. Keep dependency notices.
 4. On Windows run `npm run package:win` and wait for exit code 0.

@@ -31,6 +31,7 @@ import type {
   Result,
 } from './types';
 import './workbench.css';
+import { OrganizePanel, useAssistant } from './assistant';
 
 const unwrap = async <T,>(p: Promise<Result<T>>): Promise<T> => {
   const r = await p;
@@ -116,6 +117,7 @@ export function Workbench({
   rulesOnly?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState<WorkSnapshot | null>(null);
+  const assistant = useAssistant(bridge);
   const [view, setView] = useState<'board' | 'date' | 'review' | 'dismissed'>('board');
   const [query, setQuery] = useState(''),
     [room, setRoom] = useState('all');
@@ -128,6 +130,10 @@ export function Workbench({
   async function reload() {
     if (bridge) setSnapshot(await unwrap(bridge.work()));
   }
+  useEffect(() => {
+    if (assistant.state?.job && ['completed', 'failed', 'cancelled'].includes(assistant.state.job.state))
+      reload().catch((e) => setError(e.message));
+  }, [assistant.state?.job?.state]);
   useEffect(() => {
     let alive = true;
     const load = () => {
@@ -324,7 +330,10 @@ export function Workbench({
             <RefreshCw size={17} />
           </button>
           <button className="button primary" disabled={!bridge} onClick={() => setOrganize(true)}>
-            請 Agent 整理 <ArrowUpRight size={16} />
+            {assistant.state?.job?.state === 'running' || assistant.state?.job?.state === 'stopping'
+              ? '整理中 · 查看進度'
+              : '請 Agent 整理'}{' '}
+            <ArrowUpRight size={16} />
           </button>
         </div>
       </div>
@@ -640,57 +649,11 @@ function OrganizeDialog({
   close: () => void;
   onConnect: () => void;
 }) {
-  const [days, setDays] = useState('7'),
-    [copied, setCopied] = useState(false),
-    [error, setError] = useState('');
-  const to = today(),
-    from = new Date(Date.parse(to) - (Number(days) - 1) * 86400000).toISOString().slice(0, 10);
   const target =
-    room === 'all'
-      ? '所有已授權聊天室'
-      : `${chats.find((c) => c.chatRef === room)?.chatName ?? '所選聊天室'}（${room}）`;
-  const prompt = `請用 LINE Agent Desktop MCP 整理 ${target}，日期 ${from} 至 ${to}（Asia/Taipei）。先讀 get_work_context 的規則、所有相關分頁的現有任務與人工修正，再以 read_line_messages 讀取對話，讀完需要的分頁。對同一工作補充原卡；明確交辦或承諾列待辦，不確定的建議列待確認，閒聊不開卡。用 upsert_work_item 寫回看板，新增須有穩定 workKey，更新須用 id 與 expectedRevision，引用實際讀過的 sourceRef，尊重鎖定欄位與排除決定。不要猜負責人、期限或完成狀態，不傳送 LINE 訊息。完成後告訴我新增、更新與待確認的工作；讀取不完整或有衝突時明說。`;
+    room === 'all' ? '所有已授權聊天室' : (chats.find((c) => c.chatRef === room)?.chatName ?? '所選聊天室');
   return (
-    <Dialog label="請自己的 Agent 整理" close={close}>
-      <div className="organize-body">
-        <p>把指令貼給已連接的 Agent。它整理後，工作會寫回這個看板。</p>
-        <label>
-          整理範圍
-          <select
-            aria-label="整理天數"
-            value={days}
-            onChange={(e) => {
-              setDays(e.target.value);
-              setCopied(false);
-            }}
-          >
-            <option value="1">今天</option>
-            <option value="7">最近 7 天</option>
-            <option value="30">最近 30 天</option>
-          </select>
-        </label>
-        <div className="prompt-preview">{prompt}</div>
-        {!enabled && <p className="work-error">請先在聊天室權限開啟 Agent 存取。</p>}
-        {error && <p role="alert">{error}</p>}
-        <button
-          className="button primary"
-          onClick={async () => {
-            try {
-              await unwrap(bridge.copy(prompt));
-              setCopied(true);
-            } catch (e) {
-              setError((e as Error).message);
-            }
-          }}
-        >
-          <Clipboard size={16} />
-          {copied ? '已複製，貼給 Agent 即可' : '複製整理指令'}
-        </button>
-        <button className="text-button" onClick={onConnect}>
-          第一次使用？設定 Agent 連線 <ArrowRight size={14} />
-        </button>
-        <p className="small-note">這個按鈕不會自行啟動模型。需要定期整理時，在你的 Agent 設定排程。</p>
-      </div>
+    <Dialog label="整理 LINE 工作" close={close}>
+      <OrganizePanel bridge={bridge} enabled={enabled} room={room} target={target} onConnect={onConnect} />
     </Dialog>
   );
 }

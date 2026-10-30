@@ -1,7 +1,7 @@
 {
   "name": "line-agent-desktop",
   "productName": "LINE Agent Desktop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A local Windows companion that connects selected LINE chats to your AI agent.",
   "author": "ChiChieh",
   "license": "MIT",

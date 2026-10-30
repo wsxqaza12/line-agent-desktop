@@ -71,9 +71,23 @@ try {
   await page.getByRole('button', { name: '下一個月', exact: true }).click();
   await page.getByRole('button', { name: '本月', exact: true }).click();
   await page.getByRole('button', { name: '請 Agent 整理', exact: true }).click();
-  await page.getByRole('button', { name: '複製整理指令', exact: true }).click();
-  await page.getByRole('button', { name: '已複製，貼給 Agent 即可', exact: true }).waitFor();
-  assert.match(await page.evaluate(() => navigator.clipboard.readText()), /upsert_work_item/);
+  assert.equal(await page.getByRole('button', { name: '開始整理', exact: true }).isDisabled(), true);
+  await page.getByRole('button', { name: '選擇 AI 助理', exact: true }).click();
+  await page.getByRole('button', { name: '使用這個 AI', exact: true }).click();
+  await page.getByRole('button', { name: '已選用', exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: '需要登入', exact: true }).isDisabled(), true);
+  await page.screenshot({ path: 'test-results/assistant.png', fullPage: true });
+  await page.getByRole('button', { name: '工作看板', exact: true }).click();
+  await page.getByRole('button', { name: '請 Agent 整理', exact: true }).click();
+  await page.getByRole('button', { name: '開始整理', exact: true }).click();
+  await page.getByRole('button', { name: '停止整理', exact: true }).waitFor();
+  await page.screenshot({ path: 'test-results/organizing.png', fullPage: true });
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '整理中 · 查看進度', exact: true }).click();
+  await page.getByText('整理完成', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '開始整理', exact: true }).click();
+  await page.getByRole('button', { name: '停止整理', exact: true }).click();
+  await page.getByText('已停止整理', { exact: true }).waitFor();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: '整理偏好', exact: true }).click();
   await page.getByLabel('我的整理規則', { exact: true }).fill('只有我答應的工作才列為待辦。產品建議先確認。');
@@ -111,7 +125,8 @@ try {
   await page.getByRole('button', { name: '讀取訊息', exact: true }).click();
   await page.getByText('可以在下週的版本加上深色模式嗎？目前晚上看有點刺眼。', { exact: true }).waitFor();
   await page.getByRole('button', { name: '關閉讀取測試', exact: true }).click();
-  await page.getByRole('button', { name: '連接 Agent', exact: true }).click();
+  await page.getByRole('button', { name: 'AI 助理', exact: true }).click();
+  await page.getByRole('button', { name: '進階設定 · 外部 Agent／MCP', exact: true }).click();
   await page.getByText('config.toml', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'WSL', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('pre')?.textContent.includes('/mnt/c/'));
@@ -137,7 +152,7 @@ try {
   await page.screenshot({ path: 'test-results/fresh-mobile.png', fullPage: true });
   assert.deepEqual(errors, []);
   console.log(
-    'UI passed: work board, human edits, evidence history, drag/drop, review/dismissal, dates, shared rules, prompt clipboard, filters, permissions, MCP settings, pause, mobile; 0 page errors.',
+    'UI passed: work board, human edits, evidence history, drag/drop, review/dismissal, dates, shared rules, AI selection/start/progress/cancel, filters, permissions, MCP settings, pause, mobile; 0 page errors.',
   );
 } finally {
   await browser?.close();

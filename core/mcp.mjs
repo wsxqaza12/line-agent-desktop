@@ -124,7 +124,7 @@ export const MCP_TOOL_NAMES = tools.map((t) => t.name);
 export function createMcpServer(service) {
   const work = new WorkService(service);
   const server = new Server(
-    { name: 'line-agent-desktop', version: '0.2.0' },
+    { name: 'line-agent-desktop', version: '0.3.0' },
     {
       capabilities: { tools: {} },
       instructions:

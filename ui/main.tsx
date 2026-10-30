@@ -32,6 +32,7 @@ import {
 import { demoBridge } from './demo';
 import type { Bridge, Chat, State, LineStatus, Result, Connection, Page } from './types';
 import { Workbench } from './workbench';
+import { AssistantSetup } from './assistant';
 import './style.css';
 import './workbench.css';
 
@@ -56,7 +57,7 @@ const nav = [
   { id: 'work', label: '工作看板', icon: LayoutDashboard },
   { id: 'rules', label: '整理偏好', icon: SlidersHorizontal },
   { id: 'chats', label: '聊天室權限', icon: MessagesSquare },
-  { id: 'connect', label: '連接 Agent', icon: Plug },
+  { id: 'assistant', label: 'AI 助理', icon: Sparkles },
   { id: 'settings', label: '狀態與說明', icon: Settings2 },
 ];
 
@@ -220,7 +221,7 @@ function App() {
             </div>
           </div>
           <div className="version">
-            <span className="dot" /> Windows · v0.2.0 <span>PREVIEW</span>
+            <span className="dot" /> Windows · v0.3.0 <span>PREVIEW</span>
           </div>
         </div>
       </aside>
@@ -261,7 +262,7 @@ function App() {
               enabled={enabled}
               rulesOnly={tab === 'rules'}
               onChats={() => setTab('chats')}
-              onConnect={connect}
+              onConnect={() => setTab('assistant')}
             />
           )}
 
@@ -394,12 +395,13 @@ function App() {
             </>
           )}
 
+          {tab === 'assistant' && <AssistantSetup bridge={bridge} onAdvanced={connect} />}
           {tab === 'connect' && (
             <>
               <div className="heading">
                 <div className="eyebrow">BRING YOUR OWN AGENT</div>
-                <h1>接上你習慣的助理。</h1>
-                <p>設定一次，之後直接叫 Agent 整理 LINE 工作看板。</p>
+                <h1>外部 Agent／MCP</h1>
+                <p>進階設定：讓其他 Agent 主動查詢 LINE，或將結果寫回同一個看板。</p>
               </div>
               <div className="client-tabs" role="tablist" aria-label="選擇 Agent">
                 {[

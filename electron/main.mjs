@@ -12,6 +12,7 @@ import { connectionConfig } from '../core/connection.mjs';
 import { AppError, safeError } from '../core/errors.mjs';
 import { WorkService } from '../core/work-service.mjs';
 import { MCP_TOOL_NAMES } from '../core/mcp.mjs';
+import { AgentRunner } from '../core/agent-runner.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.dirname(here);
@@ -29,6 +30,15 @@ let mainWindow;
 let quitting = false;
 let closeAfterRead = false;
 let workWatcher, workTimer;
+const assistant = new AgentRunner(service, work, path.join(runtimeRoot, 'node', 'node.exe'), {
+  onChange: (state) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('assistant-changed', state);
+      if (state.job && ['completed', 'cancelled', 'failed'].includes(state.job.state))
+        mainWindow.webContents.send('work-changed');
+    }
+  },
+});
 const smokeIndex = process.argv.indexOf('--smoke-test');
 const smokeDir = smokeIndex >= 0 ? process.argv[smokeIndex + 1] : null;
 if (smokeDir && path.isAbsolute(smokeDir)) {
@@ -69,6 +79,7 @@ else
       });
       mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       await fs.mkdir(store.home, { recursive: true, mode: 0o700 });
+      await assistant.initialize();
       workWatcher = watch(store.home, (_event, file) => {
         if (String(file) !== 'work.sqlite') return;
         clearTimeout(workTimer);
@@ -88,6 +99,21 @@ else
         try {
           let data;
           switch (method) {
+            case 'assistant':
+              data = assistant.snapshot();
+              break;
+            case 'scanAssistants':
+              data = await assistant.scan();
+              break;
+            case 'selectAssistant':
+              data = await assistant.select(args);
+              break;
+            case 'startOrganizing':
+              data = await assistant.start(args);
+              break;
+            case 'stopOrganizing':
+              data = await assistant.cancel();
+              break;
             case 'state':
               data = await service.state();
               break;
@@ -161,7 +187,13 @@ else
         } catch (error) {
           return { ok: false, error: safeError(error) };
         } finally {
-          if (closeAfterRead && !service.busy && !mainWindow.isDestroyed()) {
+          if (
+            closeAfterRead &&
+            !service.busy &&
+            !assistant.busy &&
+            !assistant.scanning &&
+            !mainWindow.isDestroyed()
+          ) {
             quitting = true;
             mainWindow.close();
           }
@@ -170,6 +202,19 @@ else
       mainWindow.once('ready-to-show', () => mainWindow.show());
       // There is no tray daemon, polling timer, startup task, or HTTP listener.
       mainWindow.on('close', (event) => {
+        if ((assistant.busy || assistant.scanning) && !quitting) {
+          event.preventDefault();
+          closeAfterRead = true;
+          mainWindow.webContents.send('operation-in-progress');
+          if (assistant.busy)
+            assistant.cancel().finally(() => {
+              if (!service.busy && !assistant.scanning && !mainWindow.isDestroyed()) {
+                quitting = true;
+                mainWindow.close();
+              }
+            });
+          return;
+        }
         if (service.busy && !quitting) {
           event.preventDefault();
           closeAfterRead = true;
@@ -194,6 +239,7 @@ else
           const line = await mainWindow.webContents.executeJavaScript('window.lineAgent.status()');
           const mcp = await mainWindow.webContents.executeJavaScript('window.lineAgent.testMcp()');
           const workState = await mainWindow.webContents.executeJavaScript('window.lineAgent.work()');
+          const assistants = await mainWindow.webContents.executeJavaScript('window.lineAgent.scanAssistants()');
           const uiWorkCount = await mainWindow.webContents.executeJavaScript(
             'document.querySelectorAll("article.work-card").length',
           );
@@ -201,9 +247,9 @@ else
           await fs.writeFile(path.join(smokeDir, 'desktop.png'), screenshot.toPNG());
           await fs.writeFile(
             path.join(smokeDir, 'smoke.json'),
-            JSON.stringify({ title, state, line, mcp, work: workState, uiWorkCount }, null, 2),
+            JSON.stringify({ title, state, line, mcp, work: workState, assistants, uiWorkCount }, null, 2),
           );
-          exitCode = title === 'LINE Agent Desktop' && state.ok && mcp.ok && workState.ok ? 0 : 1;
+          exitCode = title === 'LINE Agent Desktop' && state.ok && mcp.ok && workState.ok && assistants.ok ? 0 : 1;
         } finally {
           quitting = true;
           app.exit(exitCode);

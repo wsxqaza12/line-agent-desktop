@@ -92,6 +92,12 @@ export type WorkMerge = {
   sourceRevision: number;
 };
 export type Bridge = {
+  assistant(): Promise<Result<AssistantState>>;
+  scanAssistants(): Promise<Result<AssistantState>>;
+  selectAssistant(id: string): Promise<Result<AssistantState>>;
+  startOrganizing(args: { days: number; chatRef?: string }): Promise<Result<AssistantState>>;
+  stopOrganizing(): Promise<Result<AssistantState>>;
+  onAssistantChanged?(callback: (state: AssistantState) => void): () => void;
   onClosing?(callback: () => void): () => void;
   onWorkChanged?(callback: () => void): () => void;
   work(): Promise<Result<WorkSnapshot>>;
@@ -108,6 +114,39 @@ export type Bridge = {
   testMcp(): Promise<Result<{ connected: boolean; tools: string[]; testedAt: string }>>;
   copy(text: string): Promise<Result<boolean>>;
   openSettings(): Promise<Result<boolean>>;
+};
+export type AssistantProvider = {
+  id: string;
+  provider: 'codex' | 'claude';
+  label: string;
+  location: string;
+  version: string;
+  status: 'ready' | 'login' | 'api' | 'update' | 'unknown';
+  detail: string;
+};
+export type AssistantJob = {
+  id: string;
+  state: 'running' | 'stopping' | 'completed' | 'failed' | 'cancelled';
+  phase: string;
+  startedAt: string;
+  updatedAt: string;
+  finishedAt?: string;
+  messageCount: number;
+  chatCount: number;
+  added: number;
+  updated: number;
+  skipped: number;
+  events: number;
+  summary: string;
+  warnings: string[];
+  error: { code: string; message: string } | null;
+};
+export type AssistantState = {
+  providers: AssistantProvider[];
+  notes: string[];
+  selectedId: string | null;
+  scanning: boolean;
+  job: AssistantJob | null;
 };
 declare global {
   interface Window {

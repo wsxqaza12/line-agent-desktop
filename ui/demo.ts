@@ -1,5 +1,6 @@
 import type { Bridge, Chat, Settings, Result } from './types';
 import { demoWork, demoEdit, demoMerge, demoRules } from './demo-work';
+import { demoAssistant } from './demo-assistant';
 const ownSenderRef = 'sender:' + '1'.repeat(24);
 const names = ['森野設計｜網站專案', 'Alex Chen', '產品交流小聚', '週末的咖啡約', '讀書會・第二季'];
 const chats: Chat[] = names.map((chatName, i) => ({
@@ -21,6 +22,7 @@ const ok = async <T>(data: T): Promise<Result<T>> => {
   return { ok: true, data: structuredClone(data) };
 };
 export const demoBridge: Bridge = {
+  ...demoAssistant,
   work: () => ok(demoWork()),
   editWork: (args) => ok(demoEdit(args)),
   mergeWork: (args) => ok(demoMerge(args)),

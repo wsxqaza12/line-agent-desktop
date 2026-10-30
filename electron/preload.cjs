@@ -10,6 +10,16 @@ contextBridge.exposeInMainWorld(
     setEnabled: (enabled) => invoke('setEnabled', enabled),
     read: (args) => invoke('read', args),
     work: () => invoke('work'),
+    assistant: () => invoke('assistant'),
+    scanAssistants: () => invoke('scanAssistants'),
+    selectAssistant: (id) => invoke('selectAssistant', id),
+    startOrganizing: (args) => invoke('startOrganizing', args),
+    stopOrganizing: () => invoke('stopOrganizing'),
+    onAssistantChanged: (callback) => {
+      const listener = (_event, state) => callback(state);
+      ipcRenderer.on('assistant-changed', listener);
+      return () => ipcRenderer.removeListener('assistant-changed', listener);
+    },
     editWork: (args) => invoke('editWork', args),
     mergeWork: (args) => invoke('mergeWork', args),
     saveRules: (args) => invoke('saveRules', args),
