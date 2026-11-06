@@ -73,10 +73,13 @@ Environment: Apple M4, macOS 15.6, traditional Chinese LINE 26.6.0, bundled Node
 - Installed app under the test launcher: real stdio MCP read, observed-source
   work writeback in an isolated profile, pause, in-flight revocation and app restart
   persistence passed, exit 0. No real tasks were changed in the user's profile.
-- Normal LaunchServices startup: UI, SQLite and six-tool MCP handshake passed;
-  Accessibility was **not yet granted in that launch context**. A test launcher's
-  permission is not proof of normal app permission. Normal-launch message reading
-  remains pending explicit macOS permission and the final integration check.
+- Normal LaunchServices startup: after granting Accessibility to the installed
+  app, the final integration check passed, exit 0. The six-tool MCP connection
+  returned 10 message rows from an authorized room (4 unsupported rows omitted).
+  Observed-source work writeback, pause, in-flight revocation (`ACCESS_CHANGED`)
+  and persistence after a normal app restart passed in an isolated profile.
+  A test launcher's permission is not proof of normal app permission; both launch
+  contexts were checked separately. No real tasks or settings were overwritten.
 
 The tested installers are not notarized. A clean-machine Gatekeeper download test,
 Intel Macs, other LINE versions/locales, and older supported macOS versions have not
