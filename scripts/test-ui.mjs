@@ -154,6 +154,16 @@ try {
     'no horizontal overflow on mobile',
   );
   await page.screenshot({ path: 'test-results/fresh-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1360, height: 1000 });
+  await page.goto('http://127.0.0.1:5187/?demo&fresh&mac');
+  await page.getByLabel('聊天室權限', { exact: true }).click();
+  await page.getByRole('button', { name: '開啟輔助使用設定', exact: true }).click();
+  await page.getByRole('button', { name: '檢查 Mac 權限', exact: true }).click();
+  await page.getByText('輔助使用已允許 · LINE 26.6.0 已開啟', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '連接我的 Agent', exact: true }).click();
+  assert.equal(await page.getByRole('button', { name: 'WSL', exact: true }).count(), 0);
+  await page.getByText(/Mac 版需要 LINE Agent Desktop 和 LINE 保持開啟/).waitFor();
+  await page.screenshot({ path: 'test-results/mac-connect.png', fullPage: true });
   assert.deepEqual(errors, []);
   console.log(
     'UI passed: work board, human edits, evidence history, drag/drop, review/dismissal, dates, shared rules, AI selection/start/progress/cancel, filters, permissions, MCP settings, pause, mobile; 0 page errors.',

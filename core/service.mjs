@@ -123,6 +123,7 @@ export class LineService {
           chatType: chat.chatType,
           expectedChatRef: chat.chatRef,
           expectedOwnSenderRef: chat.ownSenderRef,
+          ...(chat.sessionRef ? { expectedSessionRef: chat.sessionRef } : {}),
           dateFrom: args.dateFrom,
           dateTo: args.dateTo,
           messageLimit: args.limit,

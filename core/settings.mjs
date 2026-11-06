@@ -9,7 +9,12 @@ export const SENDER_REF = /^sender:[0-9a-f]{24}$/;
 export function defaultHome() {
   return (
     process.env.LINE_AGENT_HOME ??
-    path.join(process.env.APPDATA ?? path.join(os.homedir(), '.config'), 'LINE Agent Desktop')
+    path.join(
+      process.platform === 'darwin'
+        ? path.join(os.homedir(), 'Library', 'Application Support')
+        : (process.env.APPDATA ?? path.join(os.homedir(), '.config')),
+      'LINE Agent Desktop',
+    )
   );
 }
 export function validateChat(chat) {
@@ -22,7 +27,8 @@ export function validateChat(chat) {
     chat.chatName !== chat.chatName.trim() ||
     chat.chatName.length > 200 ||
     /\p{Cc}/u.test(chat.chatName) ||
-    !['group', 'direct'].includes(chat.chatType)
+    !['group', 'direct'].includes(chat.chatType) ||
+    (chat.sessionRef !== undefined && !/^session:[0-9a-f]{24}$/.test(chat.sessionRef))
   )
     throw new AppError('INVALID_ARGUMENT');
   return {
@@ -30,6 +36,7 @@ export function validateChat(chat) {
     chatName: chat.chatName,
     chatType: chat.chatType,
     ownSenderRef: chat.ownSenderRef,
+    ...(chat.sessionRef ? { sessionRef: chat.sessionRef } : {}),
   };
 }
 function validate(value) {

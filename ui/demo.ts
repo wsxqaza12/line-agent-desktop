@@ -11,6 +11,8 @@ const chats: Chat[] = names.map((chatName, i) => ({
   lastMessageAt: new Date(Date.now() - i * 3600000).toISOString(),
 }));
 const fresh = new URLSearchParams(location.search).has('fresh');
+const mac = new URLSearchParams(location.search).has('mac');
+let macAccessibility = false;
 let settings: Settings = {
   schemaVersion: 1,
   enabled: !fresh,
@@ -31,13 +33,24 @@ export const demoBridge: Bridge = {
     ok({
       settings,
       environment: {
-        platform: 'win32',
+        platform: mac ? 'darwin' : 'win32',
         supported: true,
         components: ['node', 'python', 'reader', 'sqlite'].map((id) => ({ id, available: true })),
       },
       activity: [],
     }),
-  status: () => ok({ verified: true, running: true, version: '26.5.0.3975', processState: 'running' }),
+  status: () =>
+    ok({
+      verified: true,
+      running: true,
+      version: mac ? '26.6.0' : '26.5.0.3975',
+      processState: 'running',
+      ...(mac ? { accessibility: macAccessibility } : {}),
+    }),
+  openAccessibility: () => {
+    macAccessibility = true;
+    return ok(true);
+  },
   recent: (query) =>
     ok({
       chats: chats.filter((c) => c.chatName.toLowerCase().includes(query.toLowerCase())),

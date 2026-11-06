@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 runtime/
+runtime-mac/
 .downloads/
 release/
 test-results/

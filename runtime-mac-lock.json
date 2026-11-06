@@ -1,0 +1,10 @@
+{
+  "nodeVersion": "24.22.0",
+  "architecture": "arm64",
+  "minimumMacOS": "13.5",
+  "testedLineVersion": "26.6.0",
+  "node": {
+    "url": "https://nodejs.org/dist/v24.22.0/node-v24.22.0-darwin-arm64.tar.gz",
+    "sha256": "6a9724d9b50a5f22b4816cded441b5a8d9ddae546191a5e5b7efa5a5e2ee26d5"
+  }
+}

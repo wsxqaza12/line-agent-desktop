@@ -169,6 +169,12 @@ function App() {
     });
   }
   const enabled = state?.settings.enabled ?? false;
+  const isMac = state?.environment.platform === 'darwin';
+  const navigation = isMac
+    ? nav.map((item) =>
+        item.id === 'assistant' ? { id: 'connect', label: '連接我的 Agent', icon: Plug } : item,
+      )
+    : nav;
   const allowed = state?.settings.chats ?? [];
   const ready = !!line?.running;
   const step = !ready ? 0 : !allowed.length ? 1 : 2;
@@ -198,7 +204,7 @@ function App() {
         </div>
         <div className="workspace-label">你的本機工作空間</div>
         <nav aria-label="主要導覽">
-          {nav.map((n) => (
+          {navigation.map((n) => (
             <button
               key={n.id}
               aria-label={n.label}
@@ -221,14 +227,14 @@ function App() {
             </div>
           </div>
           <div className="version">
-            <span className="dot" /> Windows · v0.3.1 <span>PREVIEW</span>
+            <span className="dot" /> {isMac ? 'macOS' : 'Windows'} · v0.4.0-preview.1 <span>PREVIEW</span>
           </div>
         </div>
       </aside>
       <main>
         <header className="topbar">
           <span>
-            工作空間 <ChevronRight size={14} /> {nav.find((n) => n.id === tab)?.label}
+            工作空間 <ChevronRight size={14} /> {navigation.find((n) => n.id === tab)?.label}
           </span>
           <div className={`status-pill ${enabled ? 'green' : ''}`}>
             <span className="dot" />
@@ -238,9 +244,7 @@ function App() {
         {demo && (
           <div className="demo-banner">介面展示模式 · 所有聊天室與訊息皆為虛構，沒有連接你的 LINE。</div>
         )}
-        {!bridge && (
-          <div className="notice error">請使用 Windows 桌面程式開啟。瀏覽器展示可在網址加上 ?demo。</div>
-        )}
+        {!bridge && <div className="notice error">請使用桌面程式開啟。瀏覽器展示可在網址加上 ?demo。</div>}
         {notice && (
           <div
             className={`notice ${notice.error ? 'error' : 'success'}`}
@@ -262,7 +266,8 @@ function App() {
               enabled={enabled}
               rulesOnly={tab === 'rules'}
               onChats={() => setTab('chats')}
-              onConnect={() => setTab('assistant')}
+              onConnect={() => (isMac ? connect() : setTab('assistant'))}
+              externalAgent={isMac}
             />
           )}
 
@@ -283,6 +288,42 @@ function App() {
                   {enabled ? '暫停所有存取' : '開啟 Agent 存取'}
                 </button>
               </div>
+              {isMac && (
+                <section className="panel detail-copy">
+                  <h2>先讓 Mac 允許讀取 LINE</h2>
+                  <p>
+                    開啟已登入的 LINE，使用繁體中文介面及台北時區。到「輔助使用」允許 LINE Agent
+                    Desktop，再回來檢查。
+                  </p>
+                  <p>
+                    載入與讀取會短暫切換 LINE 視窗，可能將聊天室標為已讀；操作時請暫停使用滑鼠。LINE
+                    重開後，請重新載入並儲存聊天室授權。
+                  </p>
+                  <div className="search-row">
+                    <button
+                      className="button secondary"
+                      disabled={!available || !!busy}
+                      onClick={() =>
+                        run('accessibility', async () => {
+                          if (bridge?.openAccessibility) await unwrap(bridge.openAccessibility());
+                        })
+                      }
+                    >
+                      開啟輔助使用設定
+                    </button>
+                    <button className="button secondary" disabled={!available || !!busy} onClick={check}>
+                      {buttonIcon('status', RefreshCw)}檢查 Mac 權限
+                    </button>
+                  </div>
+                  {line && (
+                    <p role="status">
+                      {line.accessibility ? '輔助使用已允許' : '輔助使用尚未允許'} ·{' '}
+                      {line.running ? `LINE ${line.version} 已開啟` : '請先開啟 LINE'}
+                      {line.running && !line.verified ? ' · 此 LINE 版本尚未驗證' : ''}
+                    </p>
+                  )}
+                </section>
+              )}
               <div className="scope-bar">
                 <ShieldCheck size={20} />
                 <div>
@@ -315,7 +356,11 @@ function App() {
                   </button>
                 </div>
                 <div className="list-caption">
-                  <span>最近 30 天的本機聊天室 · 每次最多 50 個</span>
+                  <span>
+                    {isMac
+                      ? 'LINE 目前可辨識的聊天室 · 每次最多 50 個'
+                      : '最近 30 天的本機聊天室 · 每次最多 50 個'}
+                  </span>
                   <span>已勾選 {selected.length} 個</span>
                 </div>
                 <div className="chat-list">
@@ -429,14 +474,14 @@ function App() {
                     <h2>加入本機 MCP 設定</h2>
                     <p>
                       {client === 'codex'
-                        ? `將下面區塊加入 ${host === 'wsl' ? 'WSL 家目錄' : 'Windows 使用者目錄'}下的 .codex/config.toml。`
+                        ? `將下面區塊加入 ${isMac ? 'Mac 家目錄' : host === 'wsl' ? 'WSL 家目錄' : 'Windows 使用者目錄'}下的 .codex/config.toml。`
                         : client === 'claude'
                           ? '在 Claude Desktop「設定 → 開發者 → 編輯設定」加入這個 MCP 伺服器。'
                           : '在支援本機 stdio MCP 的客戶端，加入以下伺服器設定。'}
                     </p>
                   </div>
                 </div>
-                {client === 'codex' && (
+                {client === 'codex' && !isMac && (
                   <div className="host-choice" role="group" aria-label="Codex 執行位置">
                     <span>Codex 執行在</span>
                     <button aria-pressed={host === 'windows'} onClick={() => setHost('windows')}>
@@ -455,9 +500,9 @@ function App() {
                 </div>
                 <pre className="code-block">{connection ? configText : '正在準備連線設定…'}</pre>
                 <p className="small-note">
-                  保留你原本的其他設定；同名伺服器請更新既有區塊。若 Codex 在 WSL
-                  執行，請切換上方執行位置；需要啟用 WSL 的 Windows 程式互通，並使用預設 /mnt
-                  磁碟掛載。關閉桌面視窗後，Agent 仍可依儲存的權限讀取；要停止請先按「暫停所有存取」。
+                  {isMac
+                    ? '保留你原本的其他設定。Mac 版需要 LINE Agent Desktop 和 LINE 保持開啟，Agent 才能讀取訊息。按「暫停所有存取」可停止訊息與看板存取。模型與排程由你原本的 Agent 提供。'
+                    : '保留你原本的其他設定；同名伺服器請更新既有區塊。若 Codex 在 WSL 執行，請切換上方執行位置；需要啟用 WSL 的 Windows 程式互通，並使用預設 /mnt 磁碟掛載。關閉桌面視窗後，Agent 仍可依儲存的權限讀取；要停止請先按「暫停所有存取」。'}
                 </p>
                 <div className="numbered-title second">
                   <span>2</span>
@@ -572,11 +617,14 @@ function App() {
                 <section className="panel detail-copy">
                   <h2>目前的讀取範圍</h2>
                   <p>
-                    資料來自電腦版 LINE 的本機快取，可能不包含完整歷史。每次可查最多 31
-                    天，更多訊息以分頁讀取。未驗證的 LINE 版本會停止讀取。
+                    {isMac
+                      ? 'Mac 預覽版讀取 LINE 視窗目前已載入的訊息，不會自動往上捲完整歷史。只保留可確認日期的項目；發話者身分不確定時不會當成你本人。同名、改名或登入工作階段改變時，請重新選取授權。'
+                      : '資料來自電腦版 LINE 的本機快取，可能不包含完整歷史。每次可查最多 31 天，更多訊息以分頁讀取。未驗證的 LINE 版本會停止讀取。'}
                   </p>
                   <span className="subtle">
-                    基於 bensonmaxai/line-desktop-mcp v3.3.8
+                    {isMac
+                      ? 'Mac 原生輔助使用讀取器 · LINE 26.6.0 · Apple Silicon'
+                      : '基於 bensonmaxai/line-desktop-mcp v3.3.8'}
                     <br />
                     社群工具，與 LINE 官方無關。
                   </span>
@@ -681,6 +729,12 @@ function App() {
             <div className="preview-body">
               {page ? (
                 <>
+                  {page.coverage?.complete === false && (
+                    <p className="notice">
+                      這是 LINE 視窗已載入的部分訊息，不代表完整歷史。略過 {page.coverage.omittedRows}{' '}
+                      個日期或格式無法確認的項目。發話者名稱保留在文字中，身分未驗證。
+                    </p>
+                  )}
                   {page.messages.length === 0 && (
                     <p className="subtle">這個日期範圍的本機快取沒有訊息，不能據此判定沒有對話。</p>
                   )}
@@ -690,7 +744,13 @@ function App() {
                       key={m.sourceRef}
                     >
                       <div>
-                        <strong>{m.senderRef === page.ownSenderRef ? '我' : '對方'}</strong>
+                        <strong>
+                          {m.senderRef === page.ownSenderRef
+                            ? '我'
+                            : m.senderIdentity === 'unverified'
+                              ? '發話者未驗證'
+                              : '對方'}
+                        </strong>
                         <time>
                           {m.date} {m.time}
                         </time>
@@ -700,7 +760,7 @@ function App() {
                     </article>
                   ))}
                   <div className="preview-end">
-                    本頁 {page.count} 筆 · 本機快取 · Asia/Taipei
+                    本頁 {page.count} 筆 · {isMac ? '已載入的 LINE 視窗' : '本機快取'} · Asia/Taipei
                     {page.pagination.hasMore && (
                       <button
                         className="text-button"
@@ -709,7 +769,7 @@ function App() {
                           page.pagination.nextCursor && read(previewChat, page.pagination.nextCursor)
                         }
                       >
-                        讀取更早一頁 <ArrowRight size={15} />
+                        {isMac ? '讀取下一頁' : '讀取更早一頁'} <ArrowRight size={15} />
                       </button>
                     )}
                   </div>

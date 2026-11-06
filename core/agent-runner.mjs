@@ -538,6 +538,9 @@ export class AgentRunner {
           });
           await guard();
           room.messages.push(...page.messages);
+          if (page.coverage) room.coverage = page.coverage;
+          if (page.warnings?.length)
+            room.warnings = [...new Set([...(room.warnings ?? []), ...page.warnings])];
           this.update({ messageCount: this.job.messageCount + page.messages.length });
           if (this.job.messageCount > 1000 || JSON.stringify(input).length > 120000)
             throw new AppError('AGENT_INPUT_LIMIT');

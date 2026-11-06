@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld(
     testMcp: () => invoke('testMcp'),
     copy: (text) => invoke('copy', text),
     openSettings: () => invoke('openSettings'),
+    openAccessibility: () => invoke('openAccessibility'),
     onClosing: (callback) => {
       const listener = () => callback();
       ipcRenderer.on('operation-in-progress', listener);

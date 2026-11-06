@@ -75,7 +75,7 @@ test('configuration serializes spaces, quotes and backslashes without shell exec
   const root = String.raw`C:\Users\Example User\LINE Agent`;
   const bridge = String.raw`C:\App "test"\bridge.cjs`;
   const home = String.raw`C:\Users\Example User\AppData\Roaming\LINE Agent Desktop`;
-  const config = connectionConfig(root, bridge, home);
+  const config = connectionConfig(root, bridge, home, 'win32');
   const args = [bridge, '--runtime-root', root, '--data-home', home];
   assert.deepEqual(JSON.parse(config.json).mcpServers.line_agent_desktop.args, args);
   assert.ok(config.codex.includes(`args = ${JSON.stringify(args)}`));

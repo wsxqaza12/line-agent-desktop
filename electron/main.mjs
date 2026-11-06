@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, clipboard, shell, session, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, clipboard, shell, session, dialog, systemPreferences } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { watch } from 'node:fs';
@@ -6,7 +6,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SettingsStore } from '../core/settings.mjs';
-import { LineBackend } from '../core/backend.mjs';
+import { createBackend, nodeExecutable } from '../core/backend.mjs';
+import { startMacBridge } from '../core/mac-ipc.mjs';
 import { LineService } from '../core/service.mjs';
 import { connectionConfig } from '../core/connection.mjs';
 import { AppError, safeError } from '../core/errors.mjs';
@@ -24,13 +25,13 @@ const bridgePath = path.join(
   'mcp-server.cjs',
 );
 const store = new SettingsStore();
-const service = new LineService(store, new LineBackend(runtimeRoot));
+const service = new LineService(store, createBackend(runtimeRoot, { desktop: true, home: store.home }));
 const work = new WorkService(service);
 let mainWindow;
 let quitting = false;
 let closeAfterRead = false;
-let workWatcher, workTimer;
-const assistant = new AgentRunner(service, work, path.join(runtimeRoot, 'node', 'node.exe'), {
+let workWatcher, workTimer, closeMacBridge;
+const assistant = new AgentRunner(service, work, nodeExecutable(runtimeRoot), {
   onChange: (state) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('assistant-changed', state);
@@ -79,6 +80,20 @@ else
       });
       mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       await fs.mkdir(store.home, { recursive: true, mode: 0o700 });
+      if (process.platform === 'darwin')
+        closeMacBridge = await startMacBridge(store.home, service, () => {
+          if (closeAfterRead && !service.busy && !assistant.busy && !assistant.scanning) {
+            setTimeout(() => {
+              if (!mainWindow.isDestroyed()) {
+                quitting = true;
+                mainWindow.close();
+              }
+            }, 100);
+          }
+        });
+      app.on('will-quit', () => {
+        closeMacBridge?.().catch(() => {});
+      });
       await assistant.initialize();
       workWatcher = watch(store.home, (_event, file) => {
         if (String(file) !== 'work.sqlite') return;
@@ -204,6 +219,14 @@ else
               if (await shell.openPath(store.home)) throw new AppError('OPEN_FOLDER_FAILED');
               data = true;
               break;
+            case 'openAccessibility':
+              if (process.platform !== 'darwin') throw new AppError('INVALID_ARGUMENT');
+              systemPreferences.isTrustedAccessibilityClient(true);
+              await shell.openExternal(
+                'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
+              );
+              data = true;
+              break;
             default:
               throw new AppError('UNKNOWN_TOOL');
           }
@@ -265,7 +288,9 @@ else
           const mcp = await mainWindow.webContents.executeJavaScript('window.lineAgent.testMcp()');
           const workState = await mainWindow.webContents.executeJavaScript('window.lineAgent.work()');
           const assistants = await mainWindow.webContents.executeJavaScript(
-            'window.lineAgent.scanAssistants()',
+            process.platform === 'darwin'
+              ? 'window.lineAgent.assistant()'
+              : 'window.lineAgent.scanAssistants()',
           );
           const uiWorkCount = await mainWindow.webContents.executeJavaScript(
             'document.querySelectorAll("article.work-card").length',

@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SettingsStore } from './core/settings.mjs';
-import { LineBackend } from './core/backend.mjs';
+import { createBackend } from './core/backend.mjs';
 import { LineService } from './core/service.mjs';
 import { createMcpServer } from './core/mcp.mjs';
 
@@ -17,7 +17,7 @@ const root =
   process.env.LINE_AGENT_RUNTIME ??
   path.resolve(path.dirname(process.argv[1]), '../runtime');
 const home = option('--data-home') ?? process.env.LINE_AGENT_HOME;
-const server = createMcpServer(new LineService(new SettingsStore(home), new LineBackend(root)));
+const server = createMcpServer(new LineService(new SettingsStore(home), createBackend(root, { home })));
 server.connect(new StdioServerTransport()).catch(() => {
   process.stderr.write('LINE Agent Desktop: MCP startup failed.\n');
   process.exitCode = 1;

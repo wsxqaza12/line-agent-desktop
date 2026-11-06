@@ -3,7 +3,7 @@
 LINE Agent Desktop is an independent community project, not affiliated with LINE.
 The desktop UI, permission layer and packaging code use the MIT license in LICENSE.
 
-The LINE reader is **bensonmaxai/line-desktop-mcp v3.3.8**, commit
+The Windows LINE reader is **bensonmaxai/line-desktop-mcp v3.3.8**, commit
 `097324e678e6dba60a4c4e187054f8b7397a9100`, based on **dtwang/line-desktop-mcp**.
 Reader functionality belongs to those upstream authors. The runtime preparation
 script preserves their source, `LICENSE.md` and `docs/THIRD_PARTY.md` without
@@ -24,6 +24,11 @@ The downloadable Windows package includes separately licensed components:
 | JavaScript dependencies                                | resources/bridge/THIRD_PARTY_LICENSES.txt                                          |
 
 All runtime download URLs and SHA-256 hashes are recorded in runtime-lock.json.
-No CUA, AutoHotkey or message-sending automation is included in this version.
+The Mac package uses this repository's Swift Accessibility reader. Its approach
+was informed by dtwang/line-desktop-mcp's macOS automation; the Swift implementation
+is original and distributed under this repository's MIT license. It includes Node
+(resources/runtime/node/LICENSE), Electron and JavaScript dependency notices listed
+above. Its pinned runtime metadata is runtime-mac-lock.json. No Python, database
+key extraction, AutoHotkey or message-sending automation is included in the Mac package.
 Artwork is original SVG/CSS geometry; no official LINE logo or private chat
 screenshots are used. Demo names and messages are fictional.

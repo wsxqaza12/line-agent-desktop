@@ -1,6 +1,7 @@
 import path from 'node:path';
-export function connectionConfig(runtimeRoot, bridgePath, home) {
-  const command = path.join(runtimeRoot, 'node', 'node.exe');
+import { nodeExecutable } from './backend.mjs';
+export function connectionConfig(runtimeRoot, bridgePath, home, platform = process.platform) {
+  const command = nodeExecutable(runtimeRoot, platform);
   // Explicit native paths also work when Windows Node is launched by a WSL client.
   // Do not rely on forwarding custom environment variables across the WSL boundary.
   const entry = { command, args: [bridgePath, '--runtime-root', runtimeRoot, '--data-home', home] };

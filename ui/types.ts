@@ -20,7 +20,13 @@ export type State = {
   environment: { platform: string; supported: boolean; components: { id: string; available: boolean }[] };
   activity: Activity[];
 };
-export type LineStatus = { verified: boolean; version: string; running: boolean; processState: string };
+export type LineStatus = {
+  verified: boolean;
+  version: string;
+  running: boolean;
+  processState: string;
+  accessibility?: boolean;
+};
 export type Recent = { chats: Chat[]; warnings: string[]; hasMore: boolean; checkedAt: string };
 export type Page = {
   chatName: string;
@@ -33,10 +39,12 @@ export type Page = {
     text: string;
     senderRef: string;
     contentType?: number;
+    senderIdentity?: string;
   }[];
   ownSenderRef: string;
   pagination: { hasMore: boolean; nextCursor: string | null };
   freshness?: { checkedAt?: string };
+  coverage?: { complete: boolean; mode: string; omittedRows: number };
 };
 export type ReadArgs = { chatRef: string; dateFrom: string; dateTo: string; limit?: number; cursor?: string };
 export type Connection = { json: string; codex: string; codexWsl: string };
@@ -117,6 +125,7 @@ export type Bridge = {
   testMcp(): Promise<Result<{ connected: boolean; tools: string[]; testedAt: string }>>;
   copy(text: string): Promise<Result<boolean>>;
   openSettings(): Promise<Result<boolean>>;
+  openAccessibility?(): Promise<Result<boolean>>;
 };
 export type AssistantProvider = {
   id: string;

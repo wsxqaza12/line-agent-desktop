@@ -1,8 +1,8 @@
 {
   "name": "line-agent-desktop",
   "productName": "LINE Agent Desktop",
-  "version": "0.3.1",
-  "description": "A local Windows companion that connects selected LINE chats to your AI agent.",
+  "version": "0.4.0-preview.1",
+  "description": "A local companion connecting selected LINE chats to your own AI agent.",
   "author": "ChiChieh",
   "license": "MIT",
   "private": true,
@@ -16,7 +16,9 @@
     "build": "tsc --noEmit && vite build && node scripts/build-bridge.mjs",
     "runtime": "python3 scripts/prepare-runtime.py",
     "package:win": "npm run build && electron-builder --win nsis zip --x64 --publish never",
-    "test:ui": "node scripts/test-ui.mjs"
+    "test:ui": "node scripts/test-ui.mjs",
+    "runtime:mac": "node scripts/prepare-mac-runtime.mjs",
+    "package:mac": "npm run build && electron-builder --mac dmg zip --arm64 --publish never"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2"
@@ -53,15 +55,6 @@
     ],
     "extraResources": [
       {
-        "from": "runtime",
-        "to": "runtime",
-        "filter": [
-          "**/*",
-          "!**/__pycache__/**",
-          "!**/*.pyc"
-        ]
-      },
-      {
         "from": "build/mcp-server.cjs",
         "to": "bridge/mcp-server.cjs"
       },
@@ -81,7 +74,18 @@
         "zip"
       ],
       "icon": "assets/icon.ico",
-      "signExecutable": false
+      "signExecutable": false,
+      "extraResources": [
+        {
+          "from": "runtime",
+          "to": "runtime",
+          "filter": [
+            "**/*",
+            "!**/__pycache__/**",
+            "!**/*.pyc"
+          ]
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -90,6 +94,41 @@
       "createDesktopShortcut": true,
       "runAfterFinish": false,
       "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "artifactName": "LINE-Agent-Desktop-${version}-mac-${arch}.${ext}",
+      "category": "public.app-category.productivity",
+      "minimumSystemVersion": "13.5",
+      "identity": "-",
+      "hardenedRuntime": true,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "extraResources": [
+        {
+          "from": "runtime-mac",
+          "to": "runtime"
+        }
+      ],
+      "icon": "assets/icon-mac.png"
+    },
+    "dmg": {
+      "title": "LINE Agent Desktop",
+      "contents": [
+        {
+          "x": 130,
+          "y": 180
+        },
+        {
+          "x": 410,
+          "y": 180,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     }
   }
 }

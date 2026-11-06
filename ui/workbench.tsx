@@ -107,6 +107,7 @@ export function Workbench({
   enabled,
   onChats,
   onConnect,
+  externalAgent = false,
   rulesOnly = false,
 }: {
   bridge?: Bridge;
@@ -114,6 +115,7 @@ export function Workbench({
   enabled: boolean;
   onChats: () => void;
   onConnect: () => void;
+  externalAgent?: boolean;
   rulesOnly?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState<WorkSnapshot | null>(null);
@@ -329,10 +331,16 @@ export function Workbench({
           >
             <RefreshCw size={17} />
           </button>
-          <button className="button primary" disabled={!bridge} onClick={() => setOrganize(true)}>
+          <button
+            className="button primary"
+            disabled={!bridge}
+            onClick={() => (externalAgent ? onConnect() : setOrganize(true))}
+          >
             {assistant.state?.job?.state === 'running' || assistant.state?.job?.state === 'stopping'
               ? '整理中 · 查看進度'
-              : '請 Agent 整理'}{' '}
+              : externalAgent
+                ? '連接我的 Agent'
+                : '請 Agent 整理'}{' '}
             <ArrowUpRight size={16} />
           </button>
         </div>

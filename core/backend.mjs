@@ -2,6 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { AppError } from './errors.mjs';
+import { MacBackend } from './mac-backend.mjs';
+
+export const nodeExecutable = (root, platform = process.platform) =>
+  path.join(root, 'node', platform === 'darwin' ? 'bin/node' : 'node.exe');
+export const createBackend = (root, options = {}) =>
+  process.platform === 'darwin' ? new MacBackend(root, options) : new LineBackend(root);
 
 export class LineBackend {
   constructor(runtimeRoot) {

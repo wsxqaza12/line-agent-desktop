@@ -2,7 +2,7 @@
 
 **把 LINE 對話裡的工作，交給你自己的 Agent 整理。**
 
-Windows 本機工作看板。選擇授權聊天室，讓原本使用的 Agent 讀取對話、
+Windows／Mac 本機工作看板。選擇授權聊天室，讓原本使用的 Agent 讀取對話、
 整理待辦並寫回看板。你可以調整進度、確認建議、依日期查看工作，
 點開任務就能看原訊息片段與變更紀錄。
 
@@ -12,8 +12,29 @@ Windows 本機工作看板。選擇授權聊天室，讓原本使用的 Agent �
 [使用方式](#開始使用) · [Agent skill](skills/line-workboard/SKILL.md) ·
 [驗證紀錄](docs/VALIDATION.md)
 
-**0.3.1 Preview**。安裝包內附 Node、Python 與 LINE 讀取器，不需要安裝開發環境。
-需要已安裝、登入的 Codex CLI 或 Claude Code；沒有附贈 AI 訂閱或背景排程。
+Windows 已發行 **0.3.1 Preview**；本分支新增 **0.4.0-preview.1 Mac 預覽版**。
+安裝包包含必要執行環境，不需要安裝開發環境。Mac 包含 Node 和原生讀取器；Windows 另包含 Python。
+Windows 內建整理按鈕需要已安裝、登入的 Codex CLI 或 Claude Code。Mac 第一版連接你原本的 MCP Agent；沒有附贈 AI 訂閱或背景排程。
+
+## Mac 預覽版
+
+目前目標是 Apple Silicon（M1 以上）、macOS 13.5 以上。實機驗證環境是 M4、macOS 15.6、LINE 26.6.0；其他 LINE 版本會停止讀取。目前讀取器需要 LINE 繁體中文介面及 Asia/Taipei 系統時區。
+
+1. 開啟 `.dmg`，把 LINE Agent Desktop 拖到「應用程式」，從應用程式開啟。
+2. 到「聊天室權限」按「開啟輔助使用設定」，允許 **LINE Agent Desktop**，回來檢查權限。先前授予 Terminal 的權限不等於本程式的權限。
+3. 開啟已登入的 LINE，載入聊天室，勾選、儲存並開啟 Agent 存取。新安裝仍預設暫停。
+4. 到「連接我的 Agent」將 MCP 設定加入原本的 Agent，測試連線。**LINE Agent Desktop 和 LINE 都需要保持開啟**。
+5. 請 Agent 讀取已授權聊天室、整理工作並寫回看板；模型、排程由你的 Agent 負責。
+
+Mac 透過輔助使用讀取 LINE 已載入的視窗內容，操作時會切換視窗，可能將聊天室標為已讀。操作期間請暫停使用滑鼠。沒有背景輪詢、登入取鑰、修改 LINE 或訊息傳送功能。
+
+讀取範圍不等於完整歷史，分頁只涵蓋本次已載入內容，不會自動往上捲。只回傳可確認日期與時間的項目；未知格式會略過並回報。發話者名稱保留在文字中，無法確認身分時不會視為使用者本人。來源引用是視窗內容的指紋，不是 LINE 伺服器訊息 ID。
+
+授權綁定 LINE 實際開啟的帳號資料庫及目前執行工作階段；不解密資料庫。LINE 重開後需重新載入並儲存授權，同一帳號的看板不會被刪除。GUI 無法取得不可變聊天室 ID，因此改名、重名或搜尋結果不完整時會停止讀取，需重新選擇。Mac 與 Windows 的身分參照不能互換。
+
+此預覽版採 ad-hoc 簽章，**尚無 Developer ID 簽章與 Apple 公證**；網路下載的版本可能需在「系統設定 → 隱私權與安全性」確認開啟。不要關閉 Gatekeeper 或 SIP。
+
+Mac 資料放在 `~/Library/Application Support/LINE Agent Desktop`。更新時關閉工具，替換應用程式即可，授權和工作資料保留；未公證預覽版更新後可能需要重新授予輔助使用權限。
 
 ## 開始使用
 
@@ -134,7 +155,7 @@ Agent 無法讀寫不在授權範圍的工作。已儲存的工作仍可由使�
 權限限制適用於本 MCP，不限制同一個作業系統使用者帳號下的其他程式。
 
 - LINE 本機快取不等於完整伺服器歷史。每次最多查 31 天、500 筆，可用 cursor 分頁；日期採 Asia/Taipei。
-- 只有本機索引可確認的聊天室能讀取；部分 LINE 介面中的對話可能找不到，沒有 GUI 備援。
+- Windows 只有本機索引可確認的聊天室能讀取；部分 LINE 介面中的對話可能找不到，沒有 GUI 備援。
 - 未驗證的 LINE 版本會停止讀取，不能略過相容性或 DLL 檢查。
 - 聊天原文是資料，不是 Agent 應服從的指令。
 - 訊息提供給 Agent 後，依該模型／服務設定處理；本機工具不代表模型離線執行。
@@ -179,6 +200,17 @@ py scripts/prepare-runtime.py
 npm run package:win
 py scripts/finalize-release.py
 ```
+
+Mac 打包（在 Apple Silicon Mac 上，有 Xcode Command Line Tools 的建置環境）：
+
+```bash
+npm ci --ignore-scripts
+npm test
+npm run runtime:mac
+npm run package:mac
+```
+
+`runtime-mac-lock.json` 鎖定 Node 版本與官方 SHA-256；Swift helper 從本 repo 原始碼編譯。使用者不需安裝 Node、Python 或 Xcode。詳見 [Mac 驗證流程](docs/MACOS.md)。
 
 `prepare-runtime.py` 核對 `runtime-lock.json` 的版本與 SHA-256，
 只寫入專案的 `.downloads/` 和 `runtime/`，不修改全域環境或排程。
